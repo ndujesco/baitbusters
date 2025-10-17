@@ -7,17 +7,27 @@ import {
   DeviceEventEmitter,
   StyleSheet,
   StatusBar,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeModules } from 'react-native';
 
-const { SmsListenerModule, NotificationListenerModule } = NativeModules;
+const {
+  SmsListenerModule,
+  NotificationListenerModule,
+  NotificationSenderModule,
+} = NativeModules;
 
 const App = () => {
   const [smsPermission, setSmsPermission] = useState('');
   const [notificationPermission, setNotificationPermission] = useState(false);
 
-  // Request SMS Permission
+  // 🔔 Startup notification
+  useEffect(() => {
+    NotificationSenderModule.sendNotification('App Ready', 'Listening for messages...');
+  }, []);
+
+  // ✅ Request SMS Permission
   const requestSmsPermission = async () => {
     try {
       const result = await PermissionsAndroid.request(
@@ -29,17 +39,25 @@ const App = () => {
     }
   };
 
-  // Request Notification Permission
+  // 🔔 Always prompt user to enable notifications
   const requestNotificationPermission = () => {
-    // Opens Android settings to enable notification access
-    NotificationListenerModule.requestPermission();
-    setNotificationPermission(true);
+    // Open settings to ask user to enable notifications
+    Alert.alert(
+      'Enable Notifications',
+      'To stay updated, please enable notifications for this app in your phone settings.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => Linking.openSettings() },
+      ]
+    );
 
-    // Start listening to broadcast events from NotificationListenerService
+    // Start listening to notifications regardless
+    NotificationListenerModule.requestPermission();
     NotificationListenerModule.startListening();
+    setNotificationPermission(true);
   };
 
-  // SMS Listener
+  // 📩 SMS Listener
   useEffect(() => {
     if (smsPermission === PermissionsAndroid.RESULTS.GRANTED) {
       SmsListenerModule.startListeningToSMS();
@@ -48,13 +66,21 @@ const App = () => {
         'onSMSReceived',
         (message) => {
           try {
-            const data = typeof message === 'string' ? JSON.parse(message) : message;
+            const data =
+              typeof message === 'string' ? JSON.parse(message) : message;
+
             Alert.alert(
               '📨 New SMS Received',
               `From: ${data.senderPhoneNumber}\n\n${data.messageBody}`
             );
+
+            NotificationSenderModule.sendNotification(
+              `SMS from ${data.senderPhoneNumber}`,
+              data.messageBody
+            );
           } catch (err) {
             console.error('Error parsing SMS:', err);
+            Alert.alert(`Error parsing SMS: ${message}`);
           }
         }
       );
@@ -63,7 +89,7 @@ const App = () => {
     }
   }, [smsPermission]);
 
-  // Notification Listener
+  // 🔔 Notification Listener
   useEffect(() => {
     if (notificationPermission) {
       const notificationSubscription = DeviceEventEmitter.addListener(
@@ -72,12 +98,21 @@ const App = () => {
           try {
             const data =
               typeof notification === 'string' ? JSON.parse(notification) : notification;
-            Alert.alert(
-              '🔔 New Notification',
-              `${data.packageName}\n${data.title}\n${data.text}`
+
+            const pkg = data.packageName || 'Unknown App';
+            const title = data.title || 'No Title';
+            const text = data.text || 'No Text';
+
+            console.log('🔔 Notification:', pkg, title, text);
+
+            Alert.alert('🔔 New Notification', `${pkg}\n${title}\n${text}`);
+
+            NotificationSenderModule.sendNotification(
+              `${pkg}: ${title}`,
+              text
             );
           } catch (err) {
-            console.error('Error parsing notification:', err);
+            console.error('Error parsing notification:', err, notification);
           }
         }
       );
@@ -86,7 +121,7 @@ const App = () => {
     }
   }, [notificationPermission]);
 
-  // Request both permissions on mount
+  // 🚀 Request all permissions on mount
   useEffect(() => {
     requestSmsPermission();
     requestNotificationPermission();
@@ -99,12 +134,12 @@ const App = () => {
         <Text style={styles.title}>📩 SMS & 🔔 Notification Listener</Text>
         <Text style={styles.subtitle}>
           {smsPermission === PermissionsAndroid.RESULTS.GRANTED
-            ? 'Waiting for SMS...'
+            ? '✅ Waiting for SMS...'
             : 'Requesting SMS permission...'}
         </Text>
         <Text style={styles.subtitle}>
           {notificationPermission
-            ? 'Waiting for Notifications...'
+            ? '✅ Waiting for Notifications...'
             : 'Requesting Notification permission...'}
         </Text>
       </View>
@@ -120,8 +155,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
   },
-  title: { fontSize: 28, fontWeight: '600', color: '#00ff9c', marginBottom: 10 },
-  subtitle: { fontSize: 16, color: '#ccc', textAlign: 'center', lineHeight: 22 },
+  title: {
+    fontSize: 28,
+    fontWeight: '600',
+    color: '#00ff9c',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#ccc',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
 });
 
 export default App;

@@ -18,7 +18,8 @@ class NotificationListener : NotificationListenerService() {
             packageName.contains("gmail") ||
             packageName.contains("yahoo") ||
             packageName.contains("messenger") ||
-            packageName.contains("telegram")
+            packageName.contains("telegram") ||
+            packageName.contains("mail")
 
         ) {
             // Send broadcast that your RN module will listen to

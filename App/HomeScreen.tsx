@@ -129,20 +129,46 @@ const HomeScreen = () => {
     }, [postNotificationPermission]);
 
     // -------- Notification Listener --------
-    useEffect(() => {
-        const sub = DeviceEventEmitter.addListener('onNotificationReceived', (notification: any) => {
-            const data = typeof notification === 'string' ? safeJsonParse(notification) : notification;
-            if (!data) return;
-            const item = {
-                packageName: data.packageName || 'Unknown',
-                title: data.title || '',
-                text: data.text || '',
-                time: new Date().toLocaleTimeString(),
-            };
-            setNotifications(prev => [item, ...prev].slice(0, 50));
-        });
-        return () => sub.remove();
-    }, []);
+ useEffect(() => {
+  const sub = DeviceEventEmitter.addListener('onNotificationReceived', (notification: any) => {
+    const data = typeof notification === 'string' ? safeJsonParse(notification) : notification;
+    if (!data) return;
+
+    const { packageName, title, text } = data;
+
+    // List of apps to watch
+    const messagingApps = ['whatsapp', 'gmail', 'yahoo', 'messenger', 'telegram', 'mail'];
+
+    // Only handle known messaging apps
+    const isMessagingApp = messagingApps.some(app => packageName.toLowerCase().includes(app));
+    if (!isMessagingApp) return;
+
+    // Skip generic notifications
+    const skipTitle = ['WhatsApp', 'Gmail', 'Yahoo Mail', 'Messenger', 'Telegram', 'Mail'];
+    const skipTextPatterns = [
+      /\d+\smessages?\sfrom\s\d+\schats?/i,
+      /new email/i,
+      /new message/i,
+      /notification/i
+    ];
+
+    if (skipTitle.includes(title)) return;
+    if (skipTextPatterns.some(pattern => pattern.test(text))) return;
+
+    // Passed all filters — add to state
+    const item = {
+      packageName,
+      title,
+      text,
+      time: new Date().toLocaleTimeString(),
+    };
+
+    setNotifications(prev => [item, ...prev].slice(0, 50));
+  });
+
+  return () => sub.remove();
+}, []);
+
 
     return (
         <FlatList

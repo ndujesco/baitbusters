@@ -14,7 +14,7 @@ export default function NotificationCard({ item }: { item: Notification }) {
     <View style={styles.card}>
       <Text style={styles.app}>{item.packageName}</Text>
       <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.text} numberOfLines={5}>{item.text}</Text>
+      <Text style={styles.text} numberOfLines={4}>{item.text}</Text>
       <Text style={styles.time}>{item.time}</Text>
     </View>
   );

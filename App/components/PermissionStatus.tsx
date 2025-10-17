@@ -1,55 +1,80 @@
 // /App/components/PermissionStatus.tsx
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 
 type Props = {
-    title: string;
-    granted: boolean;
-    onRequest: () => void;
-    subtitle?: string;
+  title: string;
+  granted: boolean;
+  onRequest: () => void;
+  subtitle?: string;
 };
 
 export default function PermissionStatus({ title, granted, onRequest, subtitle }: Props) {
-    return (
-        <View style={styles.container}>
-            <View>
-                <Text style={styles.title}>{title}</Text>
-                {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-            </View>
+  return (
+    <View style={styles.container}>
+      {/* Left Section */}
+      <View style={{ flex: 1 }}>
+        <Text style={styles.title}>{title}</Text>
+        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      </View>
 
-            <View style={styles.right}>
-                <View style={[styles.badge, { backgroundColor: granted ? '#06b6a4' : '#374151' }]}>
-                    <Text style={styles.badgeText}>{granted ? 'Enabled' : 'Off'}</Text>
-                </View>
-
-                {!granted && (
-                    <Pressable style={styles.btn} onPress={onRequest}>
-                        <Text style={styles.btnText}>Enable</Text>
-                    </Pressable>
-                )}
-
-            </View>
+      {/* Right Section */}
+      <Pressable
+        style={({ pressed }) => [
+          styles.radioContainer,
+          { opacity: pressed ? 0.7 : 1 },
+        ]}
+        onPress={onRequest}
+      >
+        <View
+          style={[
+            styles.radioOuter,
+            { borderColor: granted ? '#06b6a4' : '#64748b' },
+          ]}
+        >
+          {granted && <View style={styles.radioInner} />}
         </View>
-    );
+        <Text style={[styles.stateText, { color: granted ? '#06b6a4' : '#64748b' }]}>
+          {granted ? 'Enabled' : 'Off'}
+        </Text>
+      </Pressable>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#0B1220',
-        padding: 12,
-        borderRadius: 12,
-        marginRight: 8,
-        minWidth: 120,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    title: { color: '#E6FFFA', fontWeight: '700', fontSize: 14 },
-    subtitle: { color: '#94A3B8', fontSize: 12, marginTop: 4 },
-    right: { alignItems: 'flex-end', marginTop: 8 },
-    badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginBottom: 8 },
-    badgeText: { color: '#07121A', fontWeight: '700' },
-    btn: { backgroundColor: '#0f1724', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-    btnText: { color: '#E6FFFA', fontWeight: '600' },
+  container: {
+    backgroundColor: '#0B1220',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  title: { color: '#E6FFFA', fontWeight: '700', fontSize: 15 },
+  subtitle: { color: '#94A3B8', fontSize: 12, marginTop: 3 },
+  radioContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#06b6a4',
+  },
+  stateText: {
+    fontWeight: '600',
+    fontSize: 13,
+  },
 });

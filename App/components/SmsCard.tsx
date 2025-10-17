@@ -68,7 +68,7 @@ export default function SmsCard({ item }: { item: Sms }) {
   return (
     <View style={styles.card}>
       <Text style={styles.app}>{item.senderPhoneNumber ?? 'Unknown'}</Text>
-      <Text style={styles.text} numberOfLines={5}>{item.messageBody ?? ''}</Text>
+      <Text style={styles.text} numberOfLines={4}>{item.messageBody ?? ''}</Text>
       <Text style={styles.time}>{item.time}</Text>
     </View>
   );

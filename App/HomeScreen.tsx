@@ -128,20 +128,18 @@ const HomeScreen = () => {
         return () => sub.remove();
     }, [postNotificationPermission]);
 
-    // -------- Notification Listener --------
- useEffect(() => {
+useEffect(() => {
+  const seenNotifications = new Set<string>(); // to track unique notifications
+
   const sub = DeviceEventEmitter.addListener('onNotificationReceived', (notification: any) => {
     const data = typeof notification === 'string' ? safeJsonParse(notification) : notification;
     if (!data) return;
 
     const { packageName, title, text } = data;
 
-    // List of apps to watch
+    // Filter messaging apps
     const messagingApps = ['whatsapp', 'gmail', 'yahoo', 'messenger', 'telegram', 'mail'];
-
-    // Only handle known messaging apps
-    const isMessagingApp = messagingApps.some(app => packageName.toLowerCase().includes(app));
-    if (!isMessagingApp) return;
+    if (!messagingApps.some(app => packageName.toLowerCase().includes(app))) return;
 
     // Skip generic notifications
     const skipTitle = ['WhatsApp', 'Gmail', 'Yahoo Mail', 'Messenger', 'Telegram', 'Mail'];
@@ -151,11 +149,15 @@ const HomeScreen = () => {
       /new message/i,
       /notification/i
     ];
-
     if (skipTitle.includes(title)) return;
     if (skipTextPatterns.some(pattern => pattern.test(text))) return;
 
-    // Passed all filters — add to state
+    // Create a unique key for this notification
+    const uniqueKey = `${packageName}-${title}-${text}`;
+    if (seenNotifications.has(uniqueKey)) return; // skip duplicates
+
+    seenNotifications.add(uniqueKey);
+
     const item = {
       packageName,
       title,

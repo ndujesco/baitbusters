@@ -14,7 +14,8 @@ class MainApplication : Application(), ReactApplication {
       context = applicationContext,
       packageList =
         PackageList(this).packages.apply {
-          add(SmsListenerPackage()) // 👈 ensures your native module is registered
+          add(SmsListenerPackage()) 
+          add(NotificationListenerPackage()) 
         },
     )
   }

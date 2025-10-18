@@ -15,8 +15,10 @@ class MainApplication : Application(), ReactApplication {
       packageList =
         PackageList(this).packages.apply {
           add(SmsListenerPackage()) 
+          add(SmsSenderPackage())
           add(NotificationListenerPackage()) 
           add(NotificationSenderPackage())
+
 
         },
     )

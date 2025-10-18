@@ -1,4 +1,3 @@
-// HomeScreen.tsx
 import React, { useEffect, useState } from 'react';
 import {
     View,
@@ -6,19 +5,20 @@ import {
     PermissionsAndroid,
     DeviceEventEmitter,
     Alert,
-    Linking,
     StyleSheet,
     StatusBar,
     FlatList,
     AppState,
     AppStateStatus,
+    TextInput,
+    Button,
 } from 'react-native';
 import { NativeModules } from 'react-native';
 import PermissionStatus from './components/PermissionStatus';
 import NotificationCard from './components/NotificationCard';
 import SmsCard from './components/SmsCard';
 
-const { SmsListenerModule, NotificationListenerModule, NotificationSenderModule } = NativeModules;
+const { SmsListenerModule, SmsSenderModule, NotificationListenerModule, NotificationSenderModule } = NativeModules;
 
 function safeJsonParse(input: string | null | undefined) {
     if (!input) return null;
@@ -31,6 +31,7 @@ function safeJsonParse(input: string | null | undefined) {
 }
 
 const HomeScreen = () => {
+    // ---------- STATE ----------
     const [smsPermission, setSmsPermission] = useState(false);
     const [notificationListenerPermission, setNotificationListenerPermission] = useState(false);
     const [postNotificationPermission, setPostNotificationPermission] = useState(false);
@@ -38,51 +39,55 @@ const HomeScreen = () => {
     const [smses, setSmses] = useState<any[]>([]);
     const [notifications, setNotifications] = useState<any[]>([]);
 
-    // -------- Startup: check all permissions --------
+    const [phone, setPhone] = useState('');
+    const [message, setMessage] = useState('');
+
+
+
+    // ---------- INITIAL PERMISSION CHECK ----------
     useEffect(() => {
-        // SMS
-        PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECEIVE_SMS).then(granted => {
+
+        PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.SEND_SMS).then(granted => {
             setSmsPermission(granted);
             if (granted) SmsListenerModule?.startListeningToSMS();
         });
-
 
         NotificationListenerModule?.isPermissionGranted?.().then((granted: boolean) => {
             setNotificationListenerPermission(granted);
             if (granted) NotificationListenerModule?.startListening();
         });
 
-        // POST_NOTIFICATIONS (Android 13+)
         if (PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS) {
             PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS).then(granted => {
                 setPostNotificationPermission(granted);
             });
         }
 
-        // Startup notification (optional)
         try {
-            NotificationSenderModule?.sendNotification('App Ready', 'Listening...');
+            NotificationSenderModule?.sendNotification('BaitBusters Active', 'Now listening for messages');
         } catch { }
     }, []);
 
-    // -------- Actions --------
-    const requestSmsPermission = async () => {
-        try {
-            const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECEIVE_SMS);
-            const granted = result === PermissionsAndroid.RESULTS.GRANTED;
-            setSmsPermission(granted);
-            if (granted) SmsListenerModule?.startListeningToSMS();
-        } catch (e) {
-            console.error(e);
-        }
-    };
+const requestSmsPermissions = async () => {
+  const results = await PermissionsAndroid.requestMultiple([
+    PermissionsAndroid.PERMISSIONS.SEND_SMS,
+    PermissionsAndroid.PERMISSIONS.RECEIVE_SMS,
+  ]);
+
+  const granted =
+    results[PermissionsAndroid.PERMISSIONS.SEND_SMS] === PermissionsAndroid.RESULTS.GRANTED &&
+    results[PermissionsAndroid.PERMISSIONS.RECEIVE_SMS] === PermissionsAndroid.RESULTS.GRANTED;
+
+  setSmsPermission(granted);
+
+  if (granted) SmsListenerModule?.startListeningToSMS();
+};
 
     const requestNotificationListener = async () => {
         await NotificationListenerModule?.requestPermission();
 
         const handleAppStateChange = async (nextAppState: AppStateStatus) => {
             if (nextAppState === 'active') {
-                // Remove listener immediately
                 subscription.remove();
 
                 const granted = await NotificationListenerModule?.isPermissionGranted();
@@ -96,117 +101,162 @@ const HomeScreen = () => {
             }
         };
 
-        // Add listener and keep the subscription
         const subscription = AppState.addEventListener('change', handleAppStateChange);
     };
 
     const requestPostNotification = async () => {
         if (!PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS) {
-            // fallback for older Android
             setPostNotificationPermission(true);
             return;
         }
-        try {
-            const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
-            setPostNotificationPermission(result === PermissionsAndroid.RESULTS.GRANTED);
-        } catch (e) {
-            console.error(e);
-        }
+        const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+        setPostNotificationPermission(result === PermissionsAndroid.RESULTS.GRANTED);
     };
 
-    // -------- SMS Listener --------
+    // ---------- SMS LISTENER ----------
     useEffect(() => {
         const sub = DeviceEventEmitter.addListener('onSMSReceived', (message: any) => {
             const data = typeof message === 'string' ? safeJsonParse(message) : message;
             if (!data) return;
+
             const item = { ...data, time: new Date().toLocaleTimeString() };
             setSmses(prev => [item, ...prev].slice(0, 20));
+
             try {
-                if (postNotificationPermission) NotificationSenderModule?.sendNotification('SMS', data.messageBody ?? '');
+                if (postNotificationPermission) {
+                    NotificationSenderModule?.sendNotification(
+                        `SMS from ${data.senderPhoneNumber ?? 'Unknown'}`,
+                        data.messageBody ?? '',
+                    );
+                }
             } catch { }
         });
         return () => sub.remove();
     }, [postNotificationPermission]);
 
-useEffect(() => {
-  const seenNotifications = new Set<string>(); // to track unique notifications
+    // ---------- NOTIFICATION LISTENER ----------
+    useEffect(() => {
+        const seenNotifications = new Set<string>();
 
-  const sub = DeviceEventEmitter.addListener('onNotificationReceived', (notification: any) => {
-    const data = typeof notification === 'string' ? safeJsonParse(notification) : notification;
-    if (!data) return;
+        const sub = DeviceEventEmitter.addListener('onNotificationReceived', (notification: any) => {
+            const data = typeof notification === 'string' ? safeJsonParse(notification) : notification;
+            if (!data) return;
 
-    const { packageName, title, text } = data;
+            const { packageName, title, text } = data;
+            const messagingApps = ['whatsapp', 'gmail', 'yahoo', 'messenger', 'telegram', 'mail'];
+            if (!messagingApps.some(app => packageName?.toLowerCase().includes(app))) return;
 
-    // Filter messaging apps
-    const messagingApps = ['whatsapp', 'gmail', 'yahoo', 'messenger', 'telegram', 'mail'];
-    if (!messagingApps.some(app => packageName.toLowerCase().includes(app))) return;
+            const skipTitle = ['WhatsApp', 'Gmail', 'Yahoo Mail', 'Messenger', 'Telegram', 'Mail'];
+            const skipTextPatterns = [
+                /\d+\smessages?\sfrom\s\d+\schats?/i,
+                /new email/i,
+                /new message/i,
+                /notification/i,
+            ];
+            if (skipTitle.includes(title)) return;
+            if (skipTextPatterns.some(pattern => pattern.test(text))) return;
 
-    // Skip generic notifications
-    const skipTitle = ['WhatsApp', 'Gmail', 'Yahoo Mail', 'Messenger', 'Telegram', 'Mail'];
-    const skipTextPatterns = [
-      /\d+\smessages?\sfrom\s\d+\schats?/i,
-      /new email/i,
-      /new message/i,
-      /notification/i
-    ];
-    if (skipTitle.includes(title)) return;
-    if (skipTextPatterns.some(pattern => pattern.test(text))) return;
+            const uniqueKey = `${packageName}-${title}-${text}`;
+            if (seenNotifications.has(uniqueKey)) return;
 
-    // Create a unique key for this notification
-    const uniqueKey = `${packageName}-${title}-${text}`;
-    if (seenNotifications.has(uniqueKey)) return; // skip duplicates
+            seenNotifications.add(uniqueKey);
 
-    seenNotifications.add(uniqueKey);
+            const item = {
+                packageName,
+                title,
+                text,
+                time: new Date().toLocaleTimeString(),
+            };
 
-    const item = {
-      packageName,
-      title,
-      text,
-      time: new Date().toLocaleTimeString(),
+            setNotifications(prev => [item, ...prev].slice(0, 50));
+
+            try {
+                if (postNotificationPermission) {
+                    NotificationSenderModule?.sendNotification(
+                        `From ${title || packageName}`,
+                        text || 'New message',
+                    );
+                }
+            } catch { }
+        });
+
+        return () => sub.remove();
+    }, [postNotificationPermission]);
+
+    // ---------- SEND SMS HANDLER ----------
+    const handleSendSMS = () => {
+        if (!smsPermission) {
+            Alert.alert('Permission required', 'Enable SMS permission first');
+            return;
+        }
+        if (!phone || !message) {
+            Alert.alert('Missing fields', 'Enter phone number and message');
+            return;
+        }
+
+        SmsSenderModule.sendSMS(phone, message)
+            .then((res: any) => Alert.alert('Success', res))
+            .catch((err: any) => Alert.alert('Error', err.message || 'Failed to send SMS'));
     };
 
-    setNotifications(prev => [item, ...prev].slice(0, 50));
-  });
-
-  return () => sub.remove();
-}, []);
-
-
+    // ---------- RENDER ----------
     return (
         <FlatList
             data={[]}
             keyExtractor={() => 'empty'}
             ListHeaderComponent={
                 <>
-                    <StatusBar barStyle="light-content" backgroundColor="#08101A" />
+                    <StatusBar barStyle="light-content" backgroundColor="#0B121A" />
                     <View style={styles.header}>
                         <Text style={styles.headerTitle}>BaitBusters</Text>
-                        <Text style={styles.headerSubtitle}>Messages & Notifications</Text>
+                        <Text style={styles.headerSubtitle}>Catch spam before it bites 🕵🏾‍♂️</Text>
                     </View>
 
                     <View style={styles.permissionsContainer}>
                         <PermissionStatus
                             title="SMS"
-                            subtitle={smsPermission ? 'Access granted' : 'Requires permission'}
+                            subtitle={smsPermission ? 'Access granted' : 'Needs permission'}
                             granted={smsPermission}
-                            onRequest={requestSmsPermission}
+                            onRequest={requestSmsPermissions}
                         />
                         <PermissionStatus
                             title="Notifications Listener"
-                            subtitle={notificationListenerPermission ? 'Listener active' : 'Listener disabled'}
+                            subtitle={notificationListenerPermission ? 'Active' : 'Disabled'}
                             granted={notificationListenerPermission}
                             onRequest={requestNotificationListener}
                         />
                         <PermissionStatus
                             title="Can Send Notifications"
-                            subtitle={postNotificationPermission ? 'Can post notifications' : 'Posting disabled'}
+                            subtitle={postNotificationPermission ? 'Enabled' : 'Disabled'}
                             granted={postNotificationPermission}
                             onRequest={requestPostNotification}
                         />
                     </View>
 
-                    {/* Notifications */}
-                    <Text style={styles.sectionTitle}>Recent Notifications</Text>
+                    {/* --- Send SMS Section --- */}
+                    {smsPermission && (
+                        <View style={styles.sendSmsContainer}>
+                            <TextInput
+                                placeholder="Phone number"
+                                placeholderTextColor="#7DD3FC"
+                                style={styles.input}
+                                value={phone}
+                                onChangeText={setPhone}
+                                keyboardType="phone-pad"
+                            />
+                            <TextInput
+                                placeholder="Message"
+                                placeholderTextColor="#7DD3FC"
+                                style={[styles.input, { height: 80 }]}
+                                value={message}
+                                onChangeText={setMessage}
+                                multiline
+                            />
+                            <Button title="Send SMS" onPress={handleSendSMS} />
+                        </View>
+                    )}
+
+                    <Text style={styles.sectionTitle}>📩 Recent Notifications</Text>
                     <FlatList
                         data={notifications}
                         horizontal
@@ -214,12 +264,9 @@ useEffect(() => {
                         renderItem={({ item }) => <NotificationCard item={item} />}
                         keyExtractor={(i, idx) => `${i.packageName ?? 'pkg'}-${idx}-${i.time}`}
                         contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
-                        initialNumToRender={5}
-                        windowSize={5}
                     />
 
-                    {/* SMS */}
-                    <Text style={styles.sectionTitle}>Recent SMS</Text>
+                    <Text style={styles.sectionTitle}>📱 Recent SMS</Text>
                     <FlatList
                         data={smses}
                         horizontal
@@ -227,8 +274,6 @@ useEffect(() => {
                         renderItem={({ item }) => <SmsCard item={item} />}
                         keyExtractor={(i, idx) => `${i.senderPhoneNumber ?? 'no'}-${idx}-${i.time}`}
                         contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
-                        initialNumToRender={5}
-                        windowSize={5}
                     />
                 </>
             }
@@ -243,11 +288,37 @@ useEffect(() => {
 };
 
 const styles = StyleSheet.create({
-    header: { paddingTop: 20, paddingHorizontal: 16, paddingBottom: 8, backgroundColor: '#07121A' },
-    headerTitle: { color: '#E6FFFA', fontSize: 28, fontWeight: '700' },
-    headerSubtitle: { color: '#94A3B8', fontSize: 12, marginTop: 6 },
+    header: {
+        paddingTop: 30,
+        paddingHorizontal: 18,
+        paddingBottom: 12,
+        backgroundColor: '#07121A',
+        borderBottomColor: '#13202D',
+        borderBottomWidth: 1,
+    },
+    headerTitle: { color: '#E6FFFA', fontSize: 30, fontWeight: '700' },
+    headerSubtitle: { color: '#7DD3FC', fontSize: 13, marginTop: 4 },
     permissionsContainer: { paddingHorizontal: 16, paddingTop: 12, gap: 12 },
-    sectionTitle: { color: '#E2E8F0', fontSize: 16, marginTop: 16, marginBottom: 6, paddingHorizontal: 16 },
+    sectionTitle: {
+        color: '#C7D2FE',
+        fontSize: 17,
+        marginTop: 16,
+        marginBottom: 6,
+        paddingHorizontal: 16,
+        fontWeight: '600',
+    },
+    sendSmsContainer: {
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        gap: 8,
+    },
+    input: {
+        backgroundColor: '#13202D',
+        color: '#E6FFFA',
+        padding: 10,
+        borderRadius: 8,
+        marginBottom: 8,
+    },
 });
 
 export default HomeScreen;

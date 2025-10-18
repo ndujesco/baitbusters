@@ -1,30 +1,29 @@
 import React from 'react';
 import { View, Button, Alert } from 'react-native';
-// import { InferenceSession, Tensor } from 'onnxruntime-react-native';
+import * as ort from 'onnxruntime-react-native';
 
-const Model = () => {
+// Use this path for Android assets
+const MODEL_PATH = 'assets://text_logreg.onnx';
 
-  const callModel = () => {
-    Alert.alert("HIII")
-    // try {
-    //   // Load the model
-    //   const session = await InferenceSession.create('text_logreg.onnx');
+export default function Model() {
+  const callModel = async () => {
+    try {
+      const session = await ort.InferenceSession.create(MODEL_PATH);
 
-    //   // Input must be a string tensor
-    //   const inputTensor = new Tensor('string', ['this is a test'], [1]);
+      const inputName = session.inputNames?.[0] || 'input';
+      const inputTensor = new ort.Tensor('string', ['this is a test'], [1]);
 
-    //   // Run the model
-    //   const output = await session.run({ input: inputTensor });
+      const outputMap = await session.run({ [inputName]: inputTensor });
 
-    //   // output is an object of Tensors — usually output.label or output.probabilities
-    //   const labelTensor = output.label; // adjust key to your model's output name
-    //   const predicted = labelTensor.data[0]; // first (and only) element
+      const keys = Object.keys(outputMap);
+      const first = outputMap[keys[0]];
+      const result = first?.data?.[0];
 
-    //   Alert.alert('Prediction', `Predicted label: ${predicted}`);
-    // } catch (error) {
-    //   console.error('ONNX model error:', error);
-    //   Alert.alert('Error', 'Failed to run model. Check console for details.');
-    // }
+      Alert.alert('ONNX Result', String(result ?? 'No output'));
+    } catch (err) {
+      console.error('ONNX error:', err);
+      Alert.alert('ONNX Error', String(err));
+    }
   };
 
   return (
@@ -32,6 +31,4 @@ const Model = () => {
       <Button title="Test Model" onPress={callModel} />
     </View>
   );
-};
-
-export default Model;
+}

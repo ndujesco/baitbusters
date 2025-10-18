@@ -30,6 +30,11 @@ function safeJsonParse(input: string | null | undefined) {
     }
 }
 
+
+const REPORT_SHORTCODE = '12345';
+const REPORT_SMS_TEMPLATE = (notifText: string) =>
+    `Reporting suspicious message: "${notifText}"`;
+
 const HomeScreen = () => {
     // ---------- STATE ----------
     const [smsPermission, setSmsPermission] = useState(false);
@@ -68,20 +73,20 @@ const HomeScreen = () => {
         } catch { }
     }, []);
 
-const requestSmsPermissions = async () => {
-  const results = await PermissionsAndroid.requestMultiple([
-    PermissionsAndroid.PERMISSIONS.SEND_SMS,
-    PermissionsAndroid.PERMISSIONS.RECEIVE_SMS,
-  ]);
+    const requestSmsPermissions = async () => {
+        const results = await PermissionsAndroid.requestMultiple([
+            PermissionsAndroid.PERMISSIONS.SEND_SMS,
+            PermissionsAndroid.PERMISSIONS.RECEIVE_SMS,
+        ]);
 
-  const granted =
-    results[PermissionsAndroid.PERMISSIONS.SEND_SMS] === PermissionsAndroid.RESULTS.GRANTED &&
-    results[PermissionsAndroid.PERMISSIONS.RECEIVE_SMS] === PermissionsAndroid.RESULTS.GRANTED;
+        const granted =
+            results[PermissionsAndroid.PERMISSIONS.SEND_SMS] === PermissionsAndroid.RESULTS.GRANTED &&
+            results[PermissionsAndroid.PERMISSIONS.RECEIVE_SMS] === PermissionsAndroid.RESULTS.GRANTED;
 
-  setSmsPermission(granted);
+        setSmsPermission(granted);
 
-  if (granted) SmsListenerModule?.startListeningToSMS();
-};
+        if (granted) SmsListenerModule?.startListeningToSMS();
+    };
 
     const requestNotificationListener = async () => {
         await NotificationListenerModule?.requestPermission();
@@ -96,6 +101,7 @@ const requestSmsPermissions = async () => {
                     NotificationListenerModule?.startListening();
                     Alert.alert('Notification Listener Enabled');
                 } else {
+                    setNotificationListenerPermission(false);
                     Alert.alert('Permission still not granted');
                 }
             }
@@ -134,6 +140,9 @@ const requestSmsPermissions = async () => {
         return () => sub.remove();
     }, [postNotificationPermission]);
 
+
+
+
     // ---------- NOTIFICATION LISTENER ----------
     useEffect(() => {
         const seenNotifications = new Set<string>();
@@ -171,17 +180,40 @@ const requestSmsPermissions = async () => {
             setNotifications(prev => [item, ...prev].slice(0, 50));
 
             try {
+                // Detect the exact phishing prompt "send your bvn" (also allows "send me your bvn")
+                const notifText = (text || '').toString();
+                const isBvnPrompt = /\bsend(?:\sme)?\syour\s+bvn\b/i.test(notifText);
+
                 if (postNotificationPermission) {
-                    NotificationSenderModule?.sendNotification(
-                        `From ${title || packageName}`,
-                        text || 'New message',
-                    );
+                    if (notifText == 'send your bvn') {
+                        // Show a notification that includes a button to open the SMS app,
+                        // prefilled with REPORT_SHORTCODE and a templated message.
+                        NotificationSenderModule?.sendNotificationWithSmsAction(
+                            `From ${title || packageName}`,
+                            `"${notifText}" keh? Na spam oooooo! Report am.`,
+                            'REPORT',               // button text shown in the notification
+                            REPORT_SHORTCODE,               // phone/short-code to send to
+                            REPORT_SMS_TEMPLATE(notifText), // body to prefill in SMS app
+                        );
+
+                    } else {
+                        // Normal behavior for other notifications
+                        return
+                        //   NotificationSenderModule?.sendNotification(
+                        //     `From ${title || packageName}`,
+                        //     text || 'New message',
+                        //   );
+                    }
                 }
-            } catch { }
+            } catch (err) {
+                // silent fail; optionally log
+                console.warn('Notification handling error', err);
+            }
         });
 
         return () => sub.remove();
     }, [postNotificationPermission]);
+
 
     // ---------- SEND SMS HANDLER ----------
     const handleSendSMS = () => {
@@ -234,6 +266,7 @@ const requestSmsPermissions = async () => {
                     </View>
 
                     {/* --- Send SMS Section --- */}
+                    {/* --- Send SMS Section --- */}
                     {smsPermission && (
                         <View style={styles.sendSmsContainer}>
                             <TextInput
@@ -252,9 +285,25 @@ const requestSmsPermissions = async () => {
                                 onChangeText={setMessage}
                                 multiline
                             />
-                            <Button title="Send SMS" onPress={handleSendSMS} />
+                            <View style={{ flexDirection: 'row', gap: 10 }}>
+                                <View style={{ flex: 1 }}>
+                                    <Button title="Send SMS" onPress={handleSendSMS} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Button
+                                        title="Open in SMS App"
+                                        onPress={() => {
+                                            const { SmsIntentModule } = NativeModules;
+                                            SmsIntentModule.openSmsApp(phone, message)
+                                                .then((res: any) => console.log(res))
+                                                .catch((err: any) => console.error(err));
+                                        }}
+                                    />
+                                </View>
+                            </View>
                         </View>
                     )}
+
 
                     <Text style={styles.sectionTitle}>📩 Recent Notifications</Text>
                     <FlatList
@@ -307,11 +356,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         fontWeight: '600',
     },
+    // sendSmsContainer: {
+    //     paddingHorizontal: 16,
+    //     paddingVertical: 12,
+    //     gap: 8,
+    // },
     sendSmsContainer: {
         paddingHorizontal: 16,
         paddingVertical: 12,
-        gap: 8,
+        gap: 12, // slightly bigger gap for clarity
     },
+
     input: {
         backgroundColor: '#13202D',
         color: '#E6FFFA',
@@ -319,6 +374,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginBottom: 8,
     },
+
 });
 
 export default HomeScreen;

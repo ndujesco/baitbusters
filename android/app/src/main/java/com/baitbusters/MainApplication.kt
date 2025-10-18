@@ -18,8 +18,7 @@ class MainApplication : Application(), ReactApplication {
           add(SmsSenderPackage())
           add(NotificationListenerPackage()) 
           add(NotificationSenderPackage())
-
-
+          add(SmsIntentPackage())
         },
     )
   }

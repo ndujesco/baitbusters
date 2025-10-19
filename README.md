@@ -31,7 +31,7 @@ This leaves millions vulnerable — particularly rural and elderly users — to 
 
 ---
 
-## ✨ Our Solution — **BaitBusters**
+## ✨ Our Solution: **BaitBusters**
 
 **BaitBusters** is a hybrid, AI-powered mobile security system designed to detect phishing messages across SMS, notifications, and messaging platforms — optimized for Africa’s mobile-first and low-connectivity environments.
 
@@ -41,13 +41,13 @@ This leaves millions vulnerable — particularly rural and elderly users — to 
    - **Sure-Phish:** confidently malicious → immediate user alert  
    - **Sure-Safe:** confidently safe → silently ignored  
    - **Unsure:** uncertain → requests user consent for verification
-3. When **unsure**, the app prompts the user to manually send the message to our **SMS Gateway** (consent-first approach — *no automatic sending*).  
+3. When **unsure**, the app prompts the user to manually send the message to our **SMS Gateway** (consent-first approach; *no automatic sending*).  
 4. The **SMS Gateway** receives the message, forwards it to our **FastAPI AI backend**, and then receives a verdict.
 5. The gateway sends the verdict back to the user’s app via SMS.  
 6. The app parses that response, updates the UI, and alerts the user accordingly.
 
 ### ⚙️ Why This Design?
-- **Ethical by Design:** user consent before message forwarding — no silent data transmission.  
+- **Ethical by Design:** user consent before message forwarding; no silent data transmission.  
 - **Privacy-Preserving:** messages are not stored; no database or persistent storage.  
 - **Lightweight:** runs effectively on basic Android devices with 1–2GB RAM.  
 - **Offline Ready:** local detection works even without internet access.  
@@ -162,10 +162,5 @@ Incoming Message / Notification
 ```
 
 ---
-
-## 🧾 Credits
-
-Built with ❤️ by **Team BaitBusters** for the Wema Hackaholics Challenge.
-Protecting Africa’s mobile users, one message at a time.
 
 

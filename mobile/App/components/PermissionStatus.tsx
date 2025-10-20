@@ -9,6 +9,8 @@ import {
   AccessibilityRole,
   Platform,
 } from 'react-native';
+import { useSettings } from '../contexts';
+import { APP_DICTIONARY } from '../constants';
 
 type Props = {
   title: string;
@@ -20,6 +22,8 @@ type Props = {
 export default function PermissionStatus({ title, granted, onRequest, subtitle }: Props) {
   // animated value: 0 (off) -> 1 (on)
   const anim = useRef(new Animated.Value(granted ? 1 : 0)).current;
+   const { language } = useSettings();
+  const dict = APP_DICTIONARY[language].permissions;
 
   useEffect(() => {
     Animated.timing(anim, {
@@ -73,7 +77,7 @@ export default function PermissionStatus({ title, granted, onRequest, subtitle }
         </Animated.View>
 
         <Text style={[styles.stateText, granted ? styles.stateOn : styles.stateOff]}>
-          {granted ? 'Enabled' : 'Off'}
+          {granted ? dict.enabled : dict.off}
         </Text>
       </Pressable>
     </View>

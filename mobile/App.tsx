@@ -548,7 +548,7 @@ function SettingsPage() {
 
         <PermissionStatus
           title={APP_DICTIONARY[language].permissions.notificationsTitle}
-          subtitle={listenNotifications ? 'Active' : 'Disabled'}
+          subtitle={listenSms ? t.ui.yes : t.permissions.needPermissions}
           granted={listenNotifications}
           onRequest={async () => {
             await NotificationListenerModule?.requestPermission();
@@ -575,7 +575,7 @@ function SettingsPage() {
 
         <PermissionStatus
           title={APP_DICTIONARY[language].permissions.postNotificationsTitle}
-          subtitle={canSendNotifications ? 'Enabled' : 'Disabled'}
+          subtitle={listenSms ? t.ui.yes : t.permissions.needPermissions}
           granted={canSendNotifications}
           onRequest={requestPostNotification}
         />

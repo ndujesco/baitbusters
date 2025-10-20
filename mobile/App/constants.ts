@@ -29,6 +29,8 @@ export const APP_DICTIONARY: Record<
       notificationsTitle: string;
       postNotificationsTitle: string;
       needPermissions: string;
+      off: string;
+      enabled:string
     };
     controls: {
       startListening: string;
@@ -90,6 +92,8 @@ export const APP_DICTIONARY: Record<
       notificationsTitle: 'Notification Listener',
       postNotificationsTitle: 'Can Send Notifications',
       needPermissions: 'Permissions required',
+      enabled: 'Enabled',
+      off: 'Off'
     },
     controls: {
       startListening: 'Start Listening',
@@ -150,6 +154,8 @@ export const APP_DICTIONARY: Record<
       notificationsTitle: "Écouteur de notifications",
       postNotificationsTitle: 'Peut envoyer des notifications',
       needPermissions: 'Autorisation requise',
+      enabled: 'Activé',
+      off: 'Désactivé'
     },
     controls: {
       startListening: "Démarrer l'écoute",

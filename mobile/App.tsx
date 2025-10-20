@@ -30,12 +30,8 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const GATEWAY_NUMBER = '07061217361';
 
 const normalizePhone = (num: string) => {
-  // Remove spaces, dashes, brackets
   let n = num.replace(/[^\d]/g, '');
-
-  // Handle +234 -> 0 conversion
   if (n.startsWith('234')) n = '0' + n.slice(3);
-
   return n;
 };
 
@@ -82,8 +78,8 @@ function MainAppInner() {
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
-        <Text style={styles.title}>BaitBusters</Text>
-        <Text style={styles.subtitle}>Phishing interceptor.</Text>
+        <Text style={styles.title}>{t.app.title}</Text>
+        <Text style={styles.subtitle}>{t.app.subtitle}</Text>
       </View>
 
       <View style={styles.tabRow}>
@@ -153,10 +149,8 @@ function ActivityPage() {
   const notifSubRef = useRef<EmitterSubscription | null>(null);
   const recentBodiesRef = useRef<Set<string>>(new Set());
 
-
-
   const inferAppLabel = (pkg?: string) => {
-    if (!pkg) return 'Unknown';
+    if (!pkg) return t.ui.unknown;
     const p = pkg.toLowerCase();
     if (p.includes('whatsapp')) return 'WhatsApp';
     if (p.includes('gmail') || p.includes('google')) return 'Gmail';
@@ -171,7 +165,6 @@ function ActivityPage() {
     const { body, from } = entry;
     if (!body) return;
 
-    // Immediate short-term dedupe (protects against duplicate native events)
     if (recentBodiesRef.current.has(body)) return;
     recentBodiesRef.current.add(body);
 
@@ -179,20 +172,17 @@ function ActivityPage() {
 
     const spamStatus = checkSpamStatus(body);
 
-    // Not spam -> ignore entirely
     if (spamStatus === 0) return;
 
-    const id = `${Date.now()}`; // millisecond timestamp id
+    const id = `${Date.now()}`;
 
-
-    // Potential spam -> gentle notify, don't push to logs
     if (spamStatus === 0.5) {
       if (canSendNotifications && NotificationSenderModule) {
         const smsBody = JSON.stringify({ id, body })
         try {
           NotificationSenderModule?.sendNotificationWithSmsAction?.(
             `From ${from}`,
-            `"${APP_DICTIONARY[language].activity.potentialSpam}`,
+            `"${t.activity.potentialSpam}`,
             'REPORT',
             GATEWAY_NUMBER,
             smsBody,
@@ -204,18 +194,15 @@ function ActivityPage() {
     }
 
     if (spamStatus === 1) {
-
-      // Definite spam -> high-priority alert + push to logs
       try {
         NotificationSenderModule?.sendHighPriorityAlert?.(
-          `${APP_DICTIONARY[language].activity.spamDetected}`,
+          `${t.activity.spamDetected}`,
           `From: ${from} — "${body}"`,
         );
       } catch {
         // ignore
       }
     }
-
 
     const log: Log = {
       id,
@@ -224,70 +211,59 @@ function ActivityPage() {
       spamStatus,
     };
 
-    // Use functional update and re-check inside to avoid race duplicates
     setLogs((prev) => {
       if (prev.some((l) => l.body === body)) return prev;
       return [log, ...prev].slice(0, 200);
     });
   };
 
- const updateSpamStatus = (messageBody: string) => {
-  const data = safeJsonParse(messageBody);
+  const updateSpamStatus = (messageBody: string) => {
+    const data = safeJsonParse(messageBody);
 
-  if (!data || typeof data !== 'object') {
-    try {
-      NotificationSenderModule?.sendHighPriorityAlert?.(
-        'Invalid message body sent. Please do not edit the prompt message.'
-      );
-    } catch {}
-    return;
-  }
-
-  const { id, spamStatus } = data;
-
-  if (typeof id !== 'string' || (typeof spamStatus !== 'number' && typeof spamStatus !== 'string')) {
-    try {
-      NotificationSenderModule?.sendHighPriorityAlert?.(
-        'Invalid message body structure. Please do not edit the prompt message.'
-      );
-    } catch {}
-    return;
-  }
-
-  const numericSpamStatus = typeof spamStatus === 'string' ? parseFloat(spamStatus) : spamStatus;
-
-  const foundLog = logs.find((log) => log.id === id);
-
-  if (!foundLog) {
-    try {
-      NotificationSenderModule?.sendHighPriorityAlert?.(
-        'Message ID not found in logs. Please do not edit the prompt message.'
-      );
-    } catch {}
-    return;
-  }
-
-  const { from, body } = foundLog;
-
-  // update logs securely
-  setLogs((prevLogs) =>
-    prevLogs.map((log) => (log.id === id ? { ...log, spamStatus: numericSpamStatus } : log))
-  );
-
-  // notify depending on spam status
-  try {
-    if (numericSpamStatus === 0) {
-      // Optional: alert user that the message is safe
-    } else if (numericSpamStatus === 1) {
-      NotificationSenderModule?.sendHighPriorityAlert?.(
-        `${APP_DICTIONARY[language].activity.spamDetected}`,
-        `From: ${from} — "${body}"`
-      );
+    if (!data || typeof data !== 'object') {
+      try {
+        NotificationSenderModule?.sendHighPriorityAlert?.(t.errors.invalidMessageBody);
+      } catch {}
+      return;
     }
-  } catch {}
-};
 
+    const { id, spamStatus } = data as any;
 
+    if (typeof id !== 'string' || (typeof spamStatus !== 'number' && typeof spamStatus !== 'string')) {
+      try {
+        NotificationSenderModule?.sendHighPriorityAlert?.(t.errors.invalidMessageStructure);
+      } catch {}
+      return;
+    }
+
+    const numericSpamStatus = typeof spamStatus === 'string' ? parseFloat(spamStatus) : spamStatus;
+
+    const foundLog = logs.find((log) => log.id === id);
+
+    if (!foundLog) {
+      try {
+        NotificationSenderModule?.sendHighPriorityAlert?.(t.errors.messageIdNotFound);
+      } catch {}
+      return;
+    }
+
+    const { from, body } = foundLog;
+
+    setLogs((prevLogs) =>
+      prevLogs.map((log) => (log.id === id ? { ...log, spamStatus: numericSpamStatus } : log))
+    );
+
+    try {
+      if (numericSpamStatus === 0) {
+        // optionally notify safe
+      } else if (numericSpamStatus === 1) {
+        NotificationSenderModule?.sendHighPriorityAlert?.(
+          `${t.activity.spamDetected}`,
+          `From: ${from} — "${body}"`
+        );
+      }
+    } catch {}
+  };
 
   useEffect(() => {
     if (!listenSms) {
@@ -310,7 +286,6 @@ function ActivityPage() {
         updateSpamStatus(body)
       }
 
-
       checkMessage({
         source: 'SMS',
         packageName: 'com.sms',
@@ -330,9 +305,8 @@ function ActivityPage() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listenSms, language, canSendNotifications]);
+  }, [listenSms, language, canSendNotifications, logs]);
 
-  // Notification listener
   useEffect(() => {
     if (!listenNotifications) {
       if (notifSubRef.current) {
@@ -380,14 +354,12 @@ function ActivityPage() {
   const renderLogItem = ({ item }: { item: Log }) => {
     const time = new Date(item.receivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const label = item.source;
-    const from = item.from ?? 'unknown';
+    const from = item.from ?? t.ui.unknown;
     const spamStatus = (item as any).spamStatus ?? 0;
     const { id, body } = item
 
-
-    // colours: definite spam = red, possible = amber, ok = green
     const bodyColor = spamStatus === 1 ? '#b91c1c' : spamStatus === 0.5 ? '#f59e0b' : '#16a34a';
-    const pillText = spamStatus === 1 ? 'SPAM' : spamStatus === 0.5 ? 'Potential' : 'OK';
+    const pillText = spamStatus === 1 ? t.activity.pill.spam : spamStatus === 0.5 ? t.activity.pill.potential : t.activity.pill.ok;
     const pillColor = bodyColor;
 
     return (
@@ -406,20 +378,18 @@ function ActivityPage() {
             <Text style={styles.statusPillText}>{pillText}</Text>
           </View>
 
-          {/* Report button for potential spam (spamStatus === 0.5) */}
           {spamStatus === 0.5 ? (
             <Pressable
               onPress={() => {
                 try {
                   SmsIntentModule.openSmsApp(GATEWAY_NUMBER, JSON.stringify({ id, body }))
-
                 } catch {
                   // ignore if not defined yet
                 }
               }}
               style={({ pressed }) => [styles.reportButton, pressed && { opacity: 0.85 }]}
             >
-              <Text style={styles.reportButtonText}>Report</Text>
+              <Text style={styles.reportButtonText}>{t.activity.reportButton}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -427,15 +397,12 @@ function ActivityPage() {
     );
   };
 
-
   return (
     <View style={{ flex: 1 }}>
-      {/* top status card */}
       <View style={styles.centerCard}>
         <View style={styles.statusHeader}>
           <View>
             <Text style={styles.statusLabel}>{t.listeningLabel}</Text>
-            {/* <Text style={styles.statusHint}>{t.smsStatusDisplay}</Text> */}
           </View>
         </View>
 
@@ -443,11 +410,11 @@ function ActivityPage() {
           <View style={styles.statusRow}>
             <View style={styles.rowLeft}>
               <View style={[styles.indicator, listenSms ? styles.indicatorOn : styles.indicatorOff]} />
-              <Text style={styles.statusRowLabel}>Can listen to SMS</Text>
+              <Text style={styles.statusRowLabel}>{t.statusLabels.canListenSms}</Text>
             </View>
             <View style={[styles.badge, listenSms ? styles.badgeOn : styles.badgeOff]}>
               <Text style={[styles.badgeText, listenSms ? styles.badgeTextOn : styles.badgeTextOff]}>
-                {listenSms ? 'Yes' : 'No'}
+                {listenSms ? t.ui.yes : t.ui.no}
               </Text>
             </View>
           </View>
@@ -455,11 +422,11 @@ function ActivityPage() {
           <View style={styles.statusRow}>
             <View style={styles.rowLeft}>
               <View style={[styles.indicator, listenNotifications ? styles.indicatorOn : styles.indicatorOff]} />
-              <Text style={styles.statusRowLabel}>Can listen to notifications</Text>
+              <Text style={styles.statusRowLabel}>{t.statusLabels.canListenNotifications}</Text>
             </View>
             <View style={[styles.badge, listenNotifications ? styles.badgeOn : styles.badgeOff]}>
               <Text style={[styles.badgeText, listenNotifications ? styles.badgeTextOn : styles.badgeTextOff]}>
-                {listenNotifications ? 'Yes' : 'No'}
+                {listenNotifications ? t.ui.yes : t.ui.no}
               </Text>
             </View>
           </View>
@@ -467,25 +434,22 @@ function ActivityPage() {
           <View style={styles.statusRow}>
             <View style={styles.rowLeft}>
               <View style={[styles.indicator, canSendNotifications ? styles.indicatorOn : styles.indicatorOff]} />
-              <Text style={styles.statusRowLabel}>Can post notifications</Text>
+              <Text style={styles.statusRowLabel}>{t.statusLabels.canPostNotifications}</Text>
             </View>
             <View style={[styles.badge, canSendNotifications ? styles.badgeOn : styles.badgeOff]}>
               <Text style={[styles.badgeText, canSendNotifications ? styles.badgeTextOn : styles.badgeTextOff]}>
-                {canSendNotifications ? 'Yes' : 'No'}
+                {canSendNotifications ? t.ui.yes : t.ui.no}
               </Text>
             </View>
           </View>
         </View>
       </View>
 
-
-      {/* spacing between card and logs for elegance */}
       <View style={{ height: 50 }} />
 
-      {/* Logs */}
       <View style={styles.logList}>
         <View style={styles.logHeaderRow}>
-          <Text style={styles.logTitle}>Spam Logs</Text>
+          <Text style={styles.logTitle}>{t.activity.logTitle}</Text>
           <View style={styles.logCount}>
             <Text style={styles.logCountText}>{logs.length}</Text>
           </View>
@@ -497,7 +461,7 @@ function ActivityPage() {
           renderItem={renderLogItem}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={{ color: '#6b7280' }}>{APP_DICTIONARY[language].activity.noMessages}</Text>
+              <Text style={{ color: '#6b7280' }}>{t.activity.noMessages}</Text>
             </View>
           }
           contentContainerStyle={{ paddingBottom: 60 }}
@@ -526,8 +490,8 @@ function SettingsPage() {
     const granted =
       result === PermissionsAndroid.RESULTS.GRANTED;
     setListenSms(granted);
-    if (!granted) showToast('SMS permissions required');
-    else showToast('SMS permissions granted');
+    if (!granted) showToast(t.permissions.needPermissions);
+    else showToast(t.ui.yes);
   }
 
   async function requestPostNotification() {
@@ -554,7 +518,6 @@ function SettingsPage() {
     <View style={styles.settingsPage}>
       <View style={styles.settingsTopSpace} />
 
-      {/* Language section */}
       <View style={[styles.section, styles.sectionWithSpace]}>
         <Text style={styles.sectionLabel}>{t.settings.languageLabel}</Text>
 
@@ -573,13 +536,12 @@ function SettingsPage() {
         <Text style={styles.hintText}>{t.settings.persistNotice}</Text>
       </View>
 
-      {/* Permission section */}
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Permissions</Text>
+        <Text style={styles.sectionLabel}>{t.permissions.smsTitle}</Text>
 
         <PermissionStatus
           title={APP_DICTIONARY[language].permissions.smsTitle}
-          subtitle={listenSms ? 'Access granted' : 'Needs permission'}
+          subtitle={listenSms ? t.ui.yes : t.permissions.needPermissions}
           granted={listenSms}
           onRequest={requestSmsPermissions}
         />
@@ -619,7 +581,6 @@ function SettingsPage() {
         />
       </View>
 
-      {/* Language picker modal (popup, doesn't push layout) */}
       <Modal visible={langOpen} animationType="fade" transparent onRequestClose={() => setLangOpen(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setLangOpen(false)}>
           <View style={styles.modalCentered}>
@@ -646,6 +607,7 @@ function SettingsPage() {
 }
 
 /* ------------------ Styles ------------------ */
+// (unchanged — kept your original styles)
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   header: { padding: 20, paddingTop: 12 },
@@ -668,8 +630,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   tabActive: {
-  backgroundColor: '#2563eb', // rich blue instead of red
-  borderColor: '#1d4ed8',
+    backgroundColor: '#2563eb',
+    borderColor: '#1d4ed8',
   },
   tabText: { color: '#334155', fontWeight: '700' },
   tabTextActive: { color: '#fff' },
@@ -801,7 +763,6 @@ const styles = StyleSheet.create({
   toggleOn: { backgroundColor: '#16a34a' },
   toggleOff: { backgroundColor: '#ef4444' },
 
-  // settings-specific styles
   settingsPage: {
     flex: 1,
     backgroundColor: '#fff',
@@ -815,7 +776,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   sectionWithSpace: {
-    marginBottom: 60, // spacing between language and permissions
+    marginBottom: 60,
   },
   sectionLabel: {
     fontWeight: '700',
@@ -842,7 +803,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    // subtle shadow so it looks like a field rather than pushing content
     shadowColor: '#000',
     shadowOpacity: 0.03,
     shadowRadius: 6,
@@ -851,7 +811,6 @@ const styles = StyleSheet.create({
   pickerText: { color: '#0f172a', fontWeight: '600' },
   caret: { color: '#64748b', marginLeft: 8 },
 
-  // modal picker
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(8,12,20,0.45)',
@@ -896,7 +855,6 @@ const styles = StyleSheet.create({
     color: '#16a34a',
     fontWeight: '800',
   },
-  /* Status card header & items */
   statusHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -909,8 +867,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
     maxWidth: '86%',
   },
-
-  /* list container inside the card */
   statusItems: {
     marginTop: 8,
     borderTopWidth: 1,
@@ -934,25 +890,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 13,
   },
-
-
-  /* each row */
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    // subtle divider between rows
     borderBottomWidth: 1,
     borderBottomColor: '#f5f7fa',
   },
-
   rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-
-  /* small dot indicator */
   indicator: {
     width: 10,
     height: 10,
@@ -963,14 +912,10 @@ const styles = StyleSheet.create({
   },
   indicatorOn: { backgroundColor: '#16a34a' },
   indicatorOff: { backgroundColor: '#ef4444' },
-
-  /* row label */
   statusRowLabel: {
     color: '#0f172a',
     fontWeight: '600',
   },
-
-  /* pill / badge on the right */
   badge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -980,12 +925,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeOn: {
-    backgroundColor: '#ecfdf5', // light green bg
+    backgroundColor: '#ecfdf5',
     borderWidth: 1,
     borderColor: '#bbf7d0',
   },
   badgeOff: {
-    backgroundColor: '#fff1f2', // light red bg
+    backgroundColor: '#fff1f2',
     borderWidth: 1,
     borderColor: '#fecaca',
   },
@@ -995,11 +940,8 @@ const styles = StyleSheet.create({
   },
   badgeTextOn: { color: '#065f46' },
   badgeTextOff: { color: '#7f1d1d' },
-
-
-  dropdownList: { /* kept for compatibility if used elsewhere */ },
+  dropdownList: {},
   dropdownItem: {},
   dropdownItemText: {},
   dropdownItemTextActive: {},
 });
-

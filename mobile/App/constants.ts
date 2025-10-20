@@ -37,6 +37,9 @@ export const APP_DICTIONARY: Record<
       startListening: string;
       stopListening: string;
       clearLogs: string;
+        confirmClearLogs: string;
+  logsCleared: string;
+  deleted: string,
     };
     activity: {
       logTitle: string;
@@ -62,12 +65,18 @@ export const APP_DICTIONARY: Record<
       persistNotice: string;
       spamFilterLabel: string;
     };
+    general: {
+      from: string,
+    }
   }
 > = {
   english: {
     app: {
       title: 'BaitBusters',
       subtitle: 'Phishing interceptor.',
+    },
+    general: {
+      from: 'From',
     },
     smsStatusDisplay: 'Listening to SMS messages',
     listeningLabel: 'Statuses',
@@ -97,11 +106,15 @@ export const APP_DICTIONARY: Record<
       enabled: 'Enabled',
       off: 'Off'
     },
-    controls: {
-      startListening: 'Start Listening',
-      stopListening: 'Stop Listening',
-      clearLogs: 'Clear logs',
-    },
+controls: {
+  startListening: "Démarrer l'écoute",
+  stopListening: 'Arrêter',
+  clearLogs: 'Effacer les journaux',
+  confirmClearLogs: 'Êtes-vous sûr de vouloir effacer tous les journaux ?',
+  logsCleared: 'Journaux effacés',
+  deleted: 'Supprimé',
+},
+
     activity: {
       logTitle: 'Spam Logs',
       noMessages: 'No messages yet — waiting for incoming spam.',
@@ -132,6 +145,9 @@ export const APP_DICTIONARY: Record<
       title: 'BaitBusters',
       subtitle: "Intercepteur d'hameçonnage.",
     },
+    general: {
+      from: 'De',
+    },
     smsStatusDisplay: 'Écoute des messages SMS',
     listeningLabel: 'Statut',
     somethingCount: (count: number) => `Vous avez ${count} nouveaux messages`,
@@ -160,11 +176,16 @@ export const APP_DICTIONARY: Record<
       enabled: 'Activé',
       off: 'Désactivé'
     },
-    controls: {
-      startListening: "Démarrer l'écoute",
-      stopListening: 'Arrêter',
-      clearLogs: 'Effacer les journaux',
-    },
+controls: {
+  startListening: "Démarrer l'écoute",
+  stopListening: 'Arrêter',
+  clearLogs: 'Effacer les journaux',
+  confirmClearLogs: 'Êtes-vous sûr de vouloir effacer tous les journaux ?',
+  logsCleared: 'Journaux effacés',
+  deleted: 'Supprimé',
+},
+
+
     activity: {
       logTitle: 'Journaux de Spam',
       noMessages: 'Pas encore de messages — en attente de SMS entrants.',

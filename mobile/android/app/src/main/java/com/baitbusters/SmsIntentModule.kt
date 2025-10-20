@@ -15,10 +15,14 @@ class SmsIntentModule(private val reactContext: ReactApplicationContext) :
     @ReactMethod
     fun openSmsApp(phoneNumber: String, message: String, promise: Promise) {
         try {
-            val intent = Intent(Intent.ACTION_SENDTO)
-            intent.data = Uri.parse("smsto:$phoneNumber")
-            intent.putExtra("sms_body", message)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            // Use ACTION_VIEW with "sms:" to avoid appending to previous drafts
+            val uri = Uri.parse("sms:$phoneNumber?t=${System.currentTimeMillis()}") // random param to break caching
+            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                putExtra("address", phoneNumber)
+                putExtra("sms_body", message)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+
             reactContext.startActivity(intent)
             promise.resolve("SMS app opened")
         } catch (e: Exception) {

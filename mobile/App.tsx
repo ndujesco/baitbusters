@@ -1,5 +1,6 @@
 // App.tsx
 import React, { useEffect, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   DeviceEventEmitter,
   FlatList,
@@ -143,11 +144,34 @@ function ActivityPage() {
     receivedAt: number;
   };
 
-  const [logs, setLogs] = useState<Log[]>([]);
+  const STORAGE_KEY = 'APP_LOGS_STORAGE_V1';
 
+  const [logs, setLogs] = useState<Log[]>([]);
   const smsSubRef = useRef<EmitterSubscription | null>(null);
   const notifSubRef = useRef<EmitterSubscription | null>(null);
   const recentBodiesRef = useRef<Set<string>>(new Set());
+
+  // Load logs from storage
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = safeJsonParse(saved);
+          if (Array.isArray(parsed)) setLogs(parsed);
+        }
+      } catch (err) {
+        console.warn('Failed to load saved logs:', err);
+      }
+    })();
+  }, []);
+
+  // Save logs whenever they change
+  useEffect(() => {
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(logs)).catch(() =>
+      console.warn('Failed to persist logs'),
+    );
+  }, [logs]);
 
   const inferAppLabel = (pkg?: string) => {
     if (!pkg) return t.ui.unknown;
@@ -161,6 +185,13 @@ function ActivityPage() {
     return pkg;
   };
 
+  const persistLog = (log: Log) => {
+    setLogs((prev) => {
+      const updated = [log, ...prev].slice(0, 200);
+      return updated;
+    });
+  };
+
   const checkMessage = (entry: Omit<Log, 'id' | 'spamStatus'>) => {
     const { body, from } = entry;
     if (!body) return;
@@ -171,37 +202,30 @@ function ActivityPage() {
     if (logs.some((log) => log.body === body)) return;
 
     const spamStatus = checkSpamStatus(body);
-
     if (spamStatus === 0) return;
 
     const id = `${Date.now()}`;
 
-    if (spamStatus === 0.5) {
-      if (canSendNotifications && NotificationSenderModule) {
-        const smsBody = JSON.stringify({ id, body })
-        try {
-          NotificationSenderModule?.sendNotificationWithSmsAction?.(
-            `From ${from}`,
-            `"${t.activity.potentialSpam}`,
-            'REPORT',
-            GATEWAY_NUMBER,
-            smsBody,
-          );
-        } catch {
-          // ignore
-        }
-      }
+    if (spamStatus === 0.5 && canSendNotifications && NotificationSenderModule) {
+      try {
+        const smsBody = JSON.stringify({ id, body });
+        NotificationSenderModule?.sendNotificationWithSmsAction?.(
+          `${t.general.from}: ${from}`,
+          `"${t.activity.potentialSpam}"`,
+          'REPORT',
+          GATEWAY_NUMBER,
+          smsBody,
+        );
+      } catch { }
     }
 
     if (spamStatus === 1) {
       try {
         NotificationSenderModule?.sendHighPriorityAlert?.(
           `${t.activity.spamDetected}`,
-          `From: ${from} — "${body}"`,
+          `${t.general.from}: ${from} — "${body}"`,
         );
-      } catch {
-        // ignore
-      }
+      } catch { }
     }
 
     const log: Log = {
@@ -211,71 +235,54 @@ function ActivityPage() {
       spamStatus,
     };
 
-    setLogs((prev) => {
-      if (prev.some((l) => l.body === body)) return prev;
-      return [log, ...prev].slice(0, 200);
-    });
+    persistLog(log);
   };
 
   const updateSpamStatus = (messageBody: string) => {
     const data = safeJsonParse(messageBody);
-
-    if (!data || typeof data !== 'object') {
-      try {
-        NotificationSenderModule?.sendHighPriorityAlert?.(t.errors.invalidMessageBody);
-      } catch {}
-      return;
-    }
+    if (!data || typeof data !== 'object') return;
 
     const { id, spamStatus } = data as any;
-
-    if (typeof id !== 'string' || (typeof spamStatus !== 'number' && typeof spamStatus !== 'string')) {
-      try {
-        NotificationSenderModule?.sendHighPriorityAlert?.(t.errors.invalidMessageStructure);
-      } catch {}
-      return;
-    }
+    if (typeof id !== 'string') return;
 
     const numericSpamStatus = typeof spamStatus === 'string' ? parseFloat(spamStatus) : spamStatus;
 
+    setLogs((prevLogs) => {
+      const updated = prevLogs.map((log) =>
+        log.id === id ? { ...log, spamStatus: numericSpamStatus } : log,
+      );
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(() =>
+        console.warn('Failed to update spam status'),
+      );
+      return updated;
+    });
+
     const foundLog = logs.find((log) => log.id === id);
-
-    if (!foundLog) {
+    if (foundLog && numericSpamStatus === 1) {
       try {
-        NotificationSenderModule?.sendHighPriorityAlert?.(t.errors.messageIdNotFound);
-      } catch {}
-      return;
-    }
-
-    const { from, body } = foundLog;
-
-    setLogs((prevLogs) =>
-      prevLogs.map((log) => (log.id === id ? { ...log, spamStatus: numericSpamStatus } : log))
-    );
-
-    try {
-      if (numericSpamStatus === 0) {
-        // optionally notify safe
-      } else if (numericSpamStatus === 1) {
         NotificationSenderModule?.sendHighPriorityAlert?.(
           `${t.activity.spamDetected}`,
-          `From: ${from} — "${body}"`
+          `${t.general.from}: ${foundLog.from} — "${foundLog.body}"`,
         );
-      }
-    } catch {}
+      } catch { }
+    }
   };
 
   useEffect(() => {
     if (!listenSms) {
-      try { SmsListenerModule?.stopListeningToSMS(); } catch { }
-      if (smsSubRef.current) {
-        try { smsSubRef.current.remove(); } catch { }
-        smsSubRef.current = null;
-      }
+      try {
+        SmsListenerModule?.stopListeningToSMS();
+      } catch { }
+      smsSubRef.current?.remove?.();
+      smsSubRef.current = null;
       return;
     }
 
-    try { SmsListenerModule?.startListeningToSMS(); } catch (err) { console.warn('SmsListenerModule.startListeningToSMS error', err); }
+    try {
+      SmsListenerModule?.startListeningToSMS();
+    } catch (err) {
+      console.warn('SmsListenerModule.startListeningToSMS error', err);
+    }
 
     const sub = DeviceEventEmitter.addListener('onSMSReceived', (message: any) => {
       const data = typeof message === 'string' ? safeJsonParse(message) : message;
@@ -283,7 +290,8 @@ function ActivityPage() {
       const { senderPhoneNumber: from, messageBody: body } = data;
 
       if (normalizePhone(from) === GATEWAY_NUMBER) {
-        updateSpamStatus(body)
+        updateSpamStatus(body);
+        return;
       }
 
       checkMessage({
@@ -298,30 +306,28 @@ function ActivityPage() {
     smsSubRef.current = sub;
 
     return () => {
-      try { SmsListenerModule?.stopListeningToSMS(); } catch { }
-      if (smsSubRef.current) {
-        try { smsSubRef.current.remove(); } catch { }
-        smsSubRef.current = null;
-      }
+      try {
+        SmsListenerModule?.stopListeningToSMS();
+      } catch { }
+      smsSubRef.current?.remove?.();
+      smsSubRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listenSms, language, canSendNotifications, logs]);
 
   useEffect(() => {
     if (!listenNotifications) {
-      if (notifSubRef.current) {
-        try { notifSubRef.current.remove(); } catch { }
-        notifSubRef.current = null;
-      }
+      notifSubRef.current?.remove?.();
+      notifSubRef.current = null;
       return;
     }
 
     const sub = DeviceEventEmitter.addListener('onNotificationReceived', (notification: any) => {
       const data = typeof notification === 'string' ? safeJsonParse(notification) : notification;
       if (!data) return;
+
       const { packageName, title, text } = data;
       const messagingApps = ['whatsapp', 'gmail', 'yahoo', 'messenger', 'telegram', 'mail'];
-      if (!messagingApps.some(app => packageName?.toLowerCase().includes(app))) return;
+      if (!messagingApps.some((app) => packageName?.toLowerCase().includes(app))) return;
 
       const skipTitle = ['WhatsApp', 'Gmail', 'Yahoo Mail', 'Messenger', 'Telegram', 'Mail'];
       const skipTextPatterns = [
@@ -330,8 +336,9 @@ function ActivityPage() {
         /new message/i,
         /notification/i,
       ];
+
       if (skipTitle.includes(title)) return;
-      if (skipTextPatterns.some(pattern => pattern.test(text))) return;
+      if (skipTextPatterns.some((pattern) => pattern.test(text))) return;
 
       checkMessage({
         source: inferAppLabel(packageName),
@@ -343,29 +350,34 @@ function ActivityPage() {
     });
 
     notifSubRef.current = sub;
+
     return () => {
-      if (notifSubRef.current) {
-        try { notifSubRef.current.remove(); } catch { }
-        notifSubRef.current = null;
-      }
+      notifSubRef.current?.remove?.();
+      notifSubRef.current = null;
     };
   }, [listenNotifications, language]);
 
   const renderLogItem = ({ item }: { item: Log }) => {
-    const time = new Date(item.receivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const label = item.source;
-    const from = item.from ?? t.ui.unknown;
-    const spamStatus = (item as any).spamStatus ?? 0;
-    const { id, body } = item
+    const time = new Date(item.receivedAt).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const spamStatus = item.spamStatus ?? 0;
+    const { id, body, from, source } = item;
 
-    const bodyColor = spamStatus === 1 ? '#b91c1c' : spamStatus === 0.5 ? '#f59e0b' : '#16a34a';
-    const pillText = spamStatus === 1 ? t.activity.pill.spam : spamStatus === 0.5 ? t.activity.pill.potential : t.activity.pill.ok;
-    const pillColor = bodyColor;
+    const bodyColor =
+      spamStatus === 1 ? '#b91c1c' : spamStatus === 0.5 ? '#f59e0b' : '#16a34a';
+    const pillText =
+      spamStatus === 1
+        ? t.activity.pill.spam
+        : spamStatus === 0.5
+          ? t.activity.pill.potential
+          : t.activity.pill.ok;
 
     return (
       <View style={styles.logCard}>
         <View style={styles.logHeader}>
-          <Text style={styles.logFrom}>{`${label} • ${from}`}</Text>
+          <Text style={styles.logFrom}>{`${source} • ${from ?? t.ui.unknown}`}</Text>
           <Text style={{ color: '#6b7280' }}>{time}</Text>
         </View>
 
@@ -374,7 +386,7 @@ function ActivityPage() {
         </Text>
 
         <View style={styles.logFooter}>
-          <View style={[styles.statusPill, { backgroundColor: pillColor }]}>
+          <View style={[styles.statusPill, { backgroundColor: bodyColor }]}>
             <Text style={styles.statusPillText}>{pillText}</Text>
           </View>
 
@@ -382,10 +394,8 @@ function ActivityPage() {
             <Pressable
               onPress={() => {
                 try {
-                  SmsIntentModule.openSmsApp(GATEWAY_NUMBER, JSON.stringify({ id, body }))
-                } catch {
-                  // ignore if not defined yet
-                }
+                  SmsIntentModule.openSmsApp(GATEWAY_NUMBER, JSON.stringify({ id, body }));
+                } catch { }
               }}
               style={({ pressed }) => [styles.reportButton, pressed && { opacity: 0.85 }]}
             >
@@ -401,47 +411,37 @@ function ActivityPage() {
     <View style={{ flex: 1 }}>
       <View style={styles.centerCard}>
         <View style={styles.statusHeader}>
-          <View>
-            <Text style={styles.statusLabel}>{t.listeningLabel}</Text>
-          </View>
+          <Text style={styles.statusLabel}>{t.listeningLabel}</Text>
         </View>
 
         <View style={styles.statusItems}>
-          <View style={styles.statusRow}>
-            <View style={styles.rowLeft}>
-              <View style={[styles.indicator, listenSms ? styles.indicatorOn : styles.indicatorOff]} />
-              <Text style={styles.statusRowLabel}>{t.statusLabels.canListenSms}</Text>
+          {[
+            { label: t.statusLabels.canListenSms, state: listenSms },
+            { label: t.statusLabels.canListenNotifications, state: listenNotifications },
+            { label: t.statusLabels.canPostNotifications, state: canSendNotifications },
+          ].map((item, index) => (
+            <View key={index} style={styles.statusRow}>
+              <View style={styles.rowLeft}>
+                <View
+                  style={[
+                    styles.indicator,
+                    item.state ? styles.indicatorOn : styles.indicatorOff,
+                  ]}
+                />
+                <Text style={styles.statusRowLabel}>{item.label}</Text>
+              </View>
+              <View style={[styles.badge, item.state ? styles.badgeOn : styles.badgeOff]}>
+                <Text
+                  style={[
+                    styles.badgeText,
+                    item.state ? styles.badgeTextOn : styles.badgeTextOff,
+                  ]}
+                >
+                  {item.state ? t.ui.yes : t.ui.no}
+                </Text>
+              </View>
             </View>
-            <View style={[styles.badge, listenSms ? styles.badgeOn : styles.badgeOff]}>
-              <Text style={[styles.badgeText, listenSms ? styles.badgeTextOn : styles.badgeTextOff]}>
-                {listenSms ? t.ui.yes : t.ui.no}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.statusRow}>
-            <View style={styles.rowLeft}>
-              <View style={[styles.indicator, listenNotifications ? styles.indicatorOn : styles.indicatorOff]} />
-              <Text style={styles.statusRowLabel}>{t.statusLabels.canListenNotifications}</Text>
-            </View>
-            <View style={[styles.badge, listenNotifications ? styles.badgeOn : styles.badgeOff]}>
-              <Text style={[styles.badgeText, listenNotifications ? styles.badgeTextOn : styles.badgeTextOff]}>
-                {listenNotifications ? t.ui.yes : t.ui.no}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.statusRow}>
-            <View style={styles.rowLeft}>
-              <View style={[styles.indicator, canSendNotifications ? styles.indicatorOn : styles.indicatorOff]} />
-              <Text style={styles.statusRowLabel}>{t.statusLabels.canPostNotifications}</Text>
-            </View>
-            <View style={[styles.badge, canSendNotifications ? styles.badgeOn : styles.badgeOff]}>
-              <Text style={[styles.badgeText, canSendNotifications ? styles.badgeTextOn : styles.badgeTextOff]}>
-                {canSendNotifications ? t.ui.yes : t.ui.no}
-              </Text>
-            </View>
-          </View>
+          ))}
         </View>
       </View>
 
@@ -541,7 +541,7 @@ function SettingsPage() {
 
         <PermissionStatus
           title={t.permissions.smsTitle}
-          subtitle={listenSms ? '': t.permissions.needPermissions}
+          subtitle={listenSms ? '' : t.permissions.needPermissions}
           granted={listenSms}
           onRequest={requestSmsPermissions}
         />

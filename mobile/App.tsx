@@ -15,7 +15,6 @@ import {
   View,
   EmitterSubscription,
   Dimensions,
-  Alert,
   AppStateStatus,
   AppState,
 } from 'react-native';
@@ -29,6 +28,16 @@ const { SmsListenerModule, NotificationListenerModule, NotificationSenderModule,
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const GATEWAY_NUMBER = '07061217361';
+
+const normalizePhone = (num: string) => {
+  // Remove spaces, dashes, brackets
+  let n = num.replace(/[^\d]/g, '');
+
+  // Handle +234 -> 0 conversion
+  if (n.startsWith('234')) n = '0' + n.slice(3);
+
+  return n;
+};
 
 function checkSpamStatus(message: string) {
   if (message.includes("This is definitely a spam message")) { return 1; }
@@ -165,10 +174,7 @@ function ActivityPage() {
     // Immediate short-term dedupe (protects against duplicate native events)
     if (recentBodiesRef.current.has(body)) return;
     recentBodiesRef.current.add(body);
-    // keep dedupe for 30s
-    // setTimeout(() => recentBodiesRef.current.delete(body), 30_000);
 
-    // Also check persistent logs state (double-check; helps after app restart etc)
     if (logs.some((log) => log.body === body)) return;
 
     const spamStatus = checkSpamStatus(body);
@@ -225,6 +231,63 @@ function ActivityPage() {
     });
   };
 
+ const updateSpamStatus = (messageBody: string) => {
+  const data = safeJsonParse(messageBody);
+
+  if (!data || typeof data !== 'object') {
+    try {
+      NotificationSenderModule?.sendHighPriorityAlert?.(
+        'Invalid message body sent. Please do not edit the prompt message.'
+      );
+    } catch {}
+    return;
+  }
+
+  const { id, spamStatus } = data;
+
+  if (typeof id !== 'string' || (typeof spamStatus !== 'number' && typeof spamStatus !== 'string')) {
+    try {
+      NotificationSenderModule?.sendHighPriorityAlert?.(
+        'Invalid message body structure. Please do not edit the prompt message.'
+      );
+    } catch {}
+    return;
+  }
+
+  const numericSpamStatus = typeof spamStatus === 'string' ? parseFloat(spamStatus) : spamStatus;
+
+  const foundLog = logs.find((log) => log.id === id);
+
+  if (!foundLog) {
+    try {
+      NotificationSenderModule?.sendHighPriorityAlert?.(
+        'Message ID not found in logs. Please do not edit the prompt message.'
+      );
+    } catch {}
+    return;
+  }
+
+  const { from, body } = foundLog;
+
+  // update logs securely
+  setLogs((prevLogs) =>
+    prevLogs.map((log) => (log.id === id ? { ...log, spamStatus: numericSpamStatus } : log))
+  );
+
+  // notify depending on spam status
+  try {
+    if (numericSpamStatus === 0) {
+      // Optional: alert user that the message is safe
+    } else if (numericSpamStatus === 1) {
+      NotificationSenderModule?.sendHighPriorityAlert?.(
+        `${APP_DICTIONARY[language].activity.spamDetected}`,
+        `From: ${from} — "${body}"`
+      );
+    }
+  } catch {}
+};
+
+
 
   useEffect(() => {
     if (!listenSms) {
@@ -242,6 +305,12 @@ function ActivityPage() {
       const data = typeof message === 'string' ? safeJsonParse(message) : message;
       if (!data) return;
       const { senderPhoneNumber: from, messageBody: body } = data;
+
+      if (normalizePhone(from) === GATEWAY_NUMBER) {
+        updateSpamStatus(body)
+      }
+
+
       checkMessage({
         source: 'SMS',
         packageName: 'com.sms',
@@ -599,8 +668,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   tabActive: {
-    backgroundColor: '#dc2626',
-    borderColor: '#b91c1c',
+  backgroundColor: '#2563eb', // rich blue instead of red
+  borderColor: '#1d4ed8',
   },
   tabText: { color: '#334155', fontWeight: '700' },
   tabTextActive: { color: '#fff' },

@@ -25,6 +25,7 @@ export const APP_DICTIONARY: Record<
       canPostNotifications: string;
     };
     permissions: {
+      title: string;
       smsTitle: string;
       notificationsTitle: string;
       postNotificationsTitle: string;
@@ -88,7 +89,8 @@ export const APP_DICTIONARY: Record<
       canPostNotifications: 'Can post notifications',
     },
     permissions: {
-      smsTitle: 'SMS',
+      title: 'Permissions required',
+      smsTitle: 'Read SMS',
       notificationsTitle: 'Notification Listener',
       postNotificationsTitle: 'Can Send Notifications',
       needPermissions: 'Permissions required',
@@ -150,7 +152,8 @@ export const APP_DICTIONARY: Record<
       canPostNotifications: 'Peut envoyer des notifications',
     },
     permissions: {
-      smsTitle: 'SMS',
+      title: 'Autorisations requises',
+      smsTitle: 'Peut lire les SMS',
       notificationsTitle: "Écouteur de notifications",
       postNotificationsTitle: 'Peut envoyer des notifications',
       needPermissions: 'Autorisation requise',

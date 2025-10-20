@@ -22,7 +22,7 @@ type Props = {
 export default function PermissionStatus({ title, granted, onRequest, subtitle }: Props) {
   // animated value: 0 (off) -> 1 (on)
   const anim = useRef(new Animated.Value(granted ? 1 : 0)).current;
-   const { language } = useSettings();
+  const { language } = useSettings();
   const dict = APP_DICTIONARY[language].permissions;
 
   useEffect(() => {
@@ -97,7 +97,9 @@ const styles = StyleSheet.create({
     borderColor: '#f3f4f6',
   },
   title: { color: '#0f172a', fontWeight: '700', fontSize: 15 },
-  subtitle: { color: '#64748b', fontSize: 12, marginTop: 4 },
+  subtitle: {
+    color: '#64748b', fontSize: 12, marginTop: 4, fontStyle: 'italic', // 👈 add this line
+  },
 
   toggleWrapper: {
     flexDirection: 'row',

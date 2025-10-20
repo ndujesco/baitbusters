@@ -537,18 +537,18 @@ function SettingsPage() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>{t.permissions.smsTitle}</Text>
+        <Text style={styles.sectionLabel}>{t.permissions.title}</Text>
 
         <PermissionStatus
-          title={APP_DICTIONARY[language].permissions.smsTitle}
-          subtitle={listenSms ? t.ui.yes : t.permissions.needPermissions}
+          title={t.permissions.smsTitle}
+          subtitle={listenSms ? '': t.permissions.needPermissions}
           granted={listenSms}
           onRequest={requestSmsPermissions}
         />
 
         <PermissionStatus
-          title={APP_DICTIONARY[language].permissions.notificationsTitle}
-          subtitle={listenSms ? t.ui.yes : t.permissions.needPermissions}
+          title={t.permissions.notificationsTitle}
+          subtitle={listenNotifications ? '' : t.permissions.needPermissions}
           granted={listenNotifications}
           onRequest={async () => {
             await NotificationListenerModule?.requestPermission();
@@ -575,7 +575,7 @@ function SettingsPage() {
 
         <PermissionStatus
           title={APP_DICTIONARY[language].permissions.postNotificationsTitle}
-          subtitle={listenSms ? t.ui.yes : t.permissions.needPermissions}
+          subtitle={canSendNotifications ? '' : t.permissions.needPermissions}
           granted={canSendNotifications}
           onRequest={requestPostNotification}
         />

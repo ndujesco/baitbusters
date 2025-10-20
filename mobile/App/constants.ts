@@ -107,14 +107,13 @@ export const APP_DICTIONARY: Record<
       off: 'Off'
     },
 controls: {
-  startListening: "Démarrer l'écoute",
-  stopListening: 'Arrêter',
-  clearLogs: 'Effacer les journaux',
-  confirmClearLogs: 'Êtes-vous sûr de vouloir effacer tous les journaux ?',
-  logsCleared: 'Journaux effacés',
-  deleted: 'Supprimé',
+  startListening: 'Start Listening',
+  stopListening: 'Stop Listening',
+  clearLogs: 'Clear Logs',
+  confirmClearLogs: 'Are you sure you want to clear all logs?',
+  logsCleared: 'Logs Cleared',
+  deleted: 'Deleted',
 },
-
     activity: {
       logTitle: 'Spam Logs',
       noMessages: 'No messages yet — waiting for incoming spam.',

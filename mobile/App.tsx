@@ -1,5 +1,5 @@
 // App.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   DeviceEventEmitter,
@@ -18,17 +18,33 @@ import {
   Dimensions,
   AppStateStatus,
   AppState,
+  TouchableOpacity,
+  Alert,
+  Animated,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingsProvider, useSettings } from './App/contexts';
 import { APP_DICTIONARY } from './App/constants';
 import PermissionStatus from './App/components/PermissionStatus';
+import { SwipeListView } from 'react-native-swipe-list-view';
 
 const { SmsListenerModule, NotificationListenerModule, NotificationSenderModule, SmsIntentModule } =
   (NativeModules as any) || {};
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const GATEWAY_NUMBER = '07061217361';
+
+type Log = {
+  id: string;
+  source: string;
+  from?: string | null;
+  packageName?: string;
+  body: string;
+  spamStatus: number;
+  receivedAt: number;
+};
+
+const STORAGE_KEY = 'APP_LOGS_STORAGE_V1';
 
 const normalizePhone = (num: string) => {
   let n = num.replace(/[^\d]/g, '');
@@ -131,25 +147,17 @@ function MainApp() {
 
 /* ------------------ Activity Page ------------------ */
 function ActivityPage() {
-  const { language, listenSms, listenNotifications, canSendNotifications } = useSettings();
+  const { language, listenSms, listenNotifications, canSendNotifications } =
+    useSettings();
   const t = APP_DICTIONARY[language];
-
-  type Log = {
-    id: string;
-    source: string;
-    from?: string | null;
-    packageName?: string;
-    body: string;
-    spamStatus: number;
-    receivedAt: number;
-  };
-
-  const STORAGE_KEY = 'APP_LOGS_STORAGE_V1';
 
   const [logs, setLogs] = useState<Log[]>([]);
   const smsSubRef = useRef<EmitterSubscription | null>(null);
   const notifSubRef = useRef<EmitterSubscription | null>(null);
   const recentBodiesRef = useRef<Set<string>>(new Set());
+
+  // REMOVED rowRefs
+  // const rowRefs = useRef<Record<string, Swipeable | null>>({});
 
   // Load logs from storage
   useEffect(() => {
@@ -166,7 +174,7 @@ function ActivityPage() {
     })();
   }, []);
 
-  // Save logs whenever they change
+  // Save logs (REMOVED rowRefs cleanup)
   useEffect(() => {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(logs)).catch(() =>
       console.warn('Failed to persist logs'),
@@ -185,169 +193,247 @@ function ActivityPage() {
     return pkg;
   };
 
-  const persistLog = (log: Log) => {
+  const persistLog = useCallback((log: Log) => {
     setLogs((prev) => {
+      if (prev.some((l) => l.body === log.body)) {
+        return prev;
+      }
       const updated = [log, ...prev].slice(0, 200);
       return updated;
     });
+  }, []);
+
+  const checkMessage = useCallback(
+    (entry: Omit<Log, 'id' | 'spamStatus'>) => {
+      const { body, from } = entry;
+      if (!body) return;
+
+      if (recentBodiesRef.current.has(body)) return;
+      recentBodiesRef.current.add(body);
+
+      const spamStatus = checkSpamStatus(body);
+      if (spamStatus === 0) return;
+
+      const id = `${Date.now()}`;
+
+      if (
+        spamStatus === 0.5 &&
+        canSendNotifications &&
+        NotificationSenderModule
+      ) {
+        try {
+          const smsBody = JSON.stringify({ id, body });
+          NotificationSenderModule?.sendNotificationWithSmsAction?.(
+            `${t.general.from}: ${from}`,
+            `"${t.activity.potentialSpam}"`,
+            'REPORT',
+            GATEWAY_NUMBER,
+            smsBody,
+          );
+        } catch {}
+      }
+
+      if (spamStatus === 1) {
+        try {
+          NotificationSenderModule?.sendHighPriorityAlert?.(
+            `${t.activity.spamDetected}`,
+            `${t.general.from}: ${from} — "${body}"`,
+          );
+        } catch {}
+      }
+
+      const log: Log = {
+        id,
+        ...entry,
+        receivedAt: entry.receivedAt ?? Date.now(),
+        spamStatus,
+      };
+
+      persistLog(log);
+    },
+    [canSendNotifications, language, persistLog, t],
+  );
+
+  const updateSpamStatus = useCallback(
+    (messageBody: string) => {
+      const data = safeJsonParse(messageBody);
+      if (!data || typeof data !== 'object') return;
+
+      const { id, spamStatus } = data as any;
+      if (typeof id !== 'string') return;
+
+      const numericSpamStatus =
+        typeof spamStatus === 'string' ? parseFloat(spamStatus) : spamStatus;
+
+      setLogs((prevLogs) => {
+        let foundLog: Log | undefined;
+        const updated = prevLogs.map((log) => {
+          if (log.id === id) {
+            const newLog = { ...log, spamStatus: numericSpamStatus };
+            if (numericSpamStatus === 1) {
+              foundLog = newLog;
+            }
+            return newLog;
+          }
+          return log;
+        });
+
+        const logWasFound = prevLogs.some((log) => log.id === id);
+
+        if (logWasFound) {
+          AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(() =>
+            console.warn('Failed to update spam status'),
+          );
+        }
+
+        if (foundLog) {
+          try {
+            NotificationSenderModule?.sendHighPriorityAlert?.(
+              `${t.activity.spamDetected}`,
+              `${t.general.from}: ${foundLog.from} — "${foundLog.body}"`,
+            );
+          } catch {}
+        }
+
+        return logWasFound ? updated : prevLogs;
+      });
+    },
+    [language, t],
+  );
+
+  // --- Delete and Clear Handlers (Unchanged) ---
+  const handleDeleteLog = (id: string) => {
+    setLogs((prev) => prev.filter((log) => log.id !== id));
   };
 
-  const checkMessage = (entry: Omit<Log, 'id' | 'spamStatus'>) => {
-    const { body, from } = entry;
-    if (!body) return;
-
-    if (recentBodiesRef.current.has(body)) return;
-    recentBodiesRef.current.add(body);
-
-    if (logs.some((log) => log.body === body)) return;
-
-    const spamStatus = checkSpamStatus(body);
-    if (spamStatus === 0) return;
-
-    const id = `${Date.now()}`;
-
-    if (spamStatus === 0.5 && canSendNotifications && NotificationSenderModule) {
-      try {
-        const smsBody = JSON.stringify({ id, body });
-        NotificationSenderModule?.sendNotificationWithSmsAction?.(
-          `${t.general.from}: ${from}`,
-          `"${t.activity.potentialSpam}"`,
-          'REPORT',
-          GATEWAY_NUMBER,
-          smsBody,
-        );
-      } catch { }
-    }
-
-    if (spamStatus === 1) {
-      try {
-        NotificationSenderModule?.sendHighPriorityAlert?.(
-          `${t.activity.spamDetected}`,
-          `${t.general.from}: ${from} — "${body}"`,
-        );
-      } catch { }
-    }
-
-    const log: Log = {
-      id,
-      ...entry,
-      receivedAt: entry.receivedAt ?? Date.now(),
-      spamStatus,
-    };
-
-    persistLog(log);
+  const handleClearAllLogs = () => {
+    Alert.alert(
+      t.controls.clearLogs,
+      t.controls.confirmClearLogs,
+      [
+        { text: t.ui.no, style: 'cancel' },
+        {
+          text: t.ui.yes,
+          style: 'destructive',
+          onPress: () => {
+            setLogs([]);
+          },
+        },
+      ],
+    );
   };
 
-  const updateSpamStatus = (messageBody: string) => {
-    const data = safeJsonParse(messageBody);
-    if (!data || typeof data !== 'object') return;
+  // --- REMOVED renderRightActions ---
 
-    const { id, spamStatus } = data as any;
-    if (typeof id !== 'string') return;
-
-    const numericSpamStatus = typeof spamStatus === 'string' ? parseFloat(spamStatus) : spamStatus;
-
-    setLogs((prevLogs) => {
-      const updated = prevLogs.map((log) =>
-        log.id === id ? { ...log, spamStatus: numericSpamStatus } : log,
-      );
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(() =>
-        console.warn('Failed to update spam status'),
-      );
-      return updated;
-    });
-
-    const foundLog = logs.find((log) => log.id === id);
-    if (foundLog && numericSpamStatus === 1) {
-      try {
-        NotificationSenderModule?.sendHighPriorityAlert?.(
-          `${t.activity.spamDetected}`,
-          `${t.general.from}: ${foundLog.from} — "${foundLog.body}"`,
-        );
-      } catch { }
-    }
-  };
-
+  // --- SMS Listener Effect (Unchanged) ---
   useEffect(() => {
     if (!listenSms) {
       try {
         SmsListenerModule?.stopListeningToSMS();
-      } catch { }
+      } catch {}
       smsSubRef.current?.remove?.();
       smsSubRef.current = null;
       return;
     }
-
+    // ... (rest of effect is unchanged)
     try {
       SmsListenerModule?.startListeningToSMS();
     } catch (err) {
       console.warn('SmsListenerModule.startListeningToSMS error', err);
     }
 
-    const sub = DeviceEventEmitter.addListener('onSMSReceived', (message: any) => {
-      const data = typeof message === 'string' ? safeJsonParse(message) : message;
-      if (!data) return;
-      const { senderPhoneNumber: from, messageBody: body } = data;
+    const sub = DeviceEventEmitter.addListener(
+      'onSMSReceived',
+      (message: any) => {
+        const data =
+          typeof message === 'string' ? safeJsonParse(message) : message;
+        if (!data) return;
+        const { senderPhoneNumber: from, messageBody: body } = data;
 
-      if (normalizePhone(from) === GATEWAY_NUMBER) {
-        updateSpamStatus(body);
-        return;
-      }
+        if (normalizePhone(from) === GATEWAY_NUMBER) {
+          updateSpamStatus(body);
+          return;
+        }
 
-      checkMessage({
-        source: 'SMS',
-        packageName: 'com.sms',
-        from,
-        body,
-        receivedAt: Date.now(),
-      });
-    });
+        checkMessage({
+          source: 'SMS',
+          packageName: 'com.sms',
+          from,
+          body,
+          receivedAt: Date.now(),
+        });
+      },
+    );
 
     smsSubRef.current = sub;
 
     return () => {
       try {
         SmsListenerModule?.stopListeningToSMS();
-      } catch { }
+      } catch {}
       smsSubRef.current?.remove?.();
       smsSubRef.current = null;
     };
-  }, [listenSms, language, canSendNotifications, logs]);
+  }, [listenSms, checkMessage, updateSpamStatus]);
 
+  // --- Notification Listener Effect (Unchanged) ---
   useEffect(() => {
     if (!listenNotifications) {
       notifSubRef.current?.remove?.();
       notifSubRef.current = null;
       return;
     }
+    // ... (rest of effect is unchanged)
+    const sub = DeviceEventEmitter.addListener(
+      'onNotificationReceived',
+      (notification: any) => {
+        const data =
+          typeof notification === 'string'
+            ? safeJsonParse(notification)
+            : notification;
+        if (!data) return;
 
-    const sub = DeviceEventEmitter.addListener('onNotificationReceived', (notification: any) => {
-      const data = typeof notification === 'string' ? safeJsonParse(notification) : notification;
-      if (!data) return;
+        const { packageName, title, text } = data;
+        const messagingApps = [
+          'whatsapp',
+          'gmail',
+          'yahoo',
+          'messenger',
+          'telegram',
+          'mail',
+        ];
+        if (
+          !messagingApps.some((app) => packageName?.toLowerCase().includes(app))
+        )
+          return;
 
-      const { packageName, title, text } = data;
-      const messagingApps = ['whatsapp', 'gmail', 'yahoo', 'messenger', 'telegram', 'mail'];
-      if (!messagingApps.some((app) => packageName?.toLowerCase().includes(app))) return;
+        const skipTitle = [
+          'WhatsApp',
+          'Gmail',
+          'Yahoo Mail',
+          'Messenger',
+          'Telegram',
+          'Mail',
+        ];
+        const skipTextPatterns = [
+          /\d+\smessages?\sfrom\s\d+\schats?/i,
+          /new email/i,
+          /new message/i,
+          /notification/i,
+        ];
 
-      const skipTitle = ['WhatsApp', 'Gmail', 'Yahoo Mail', 'Messenger', 'Telegram', 'Mail'];
-      const skipTextPatterns = [
-        /\d+\smessages?\sfrom\s\d+\schats?/i,
-        /new email/i,
-        /new message/i,
-        /notification/i,
-      ];
+        if (skipTitle.includes(title)) return;
+        if (skipTextPatterns.some((pattern) => pattern.test(text))) return;
 
-      if (skipTitle.includes(title)) return;
-      if (skipTextPatterns.some((pattern) => pattern.test(text))) return;
-
-      checkMessage({
-        source: inferAppLabel(packageName),
-        from: title ?? null,
-        packageName,
-        body: text,
-        receivedAt: Date.now(),
-      });
-    });
+        checkMessage({
+          source: inferAppLabel(packageName),
+          from: title ?? null,
+          packageName,
+          body: text,
+          receivedAt: Date.now(),
+        });
+      },
+    );
 
     notifSubRef.current = sub;
 
@@ -355,9 +441,11 @@ function ActivityPage() {
       notifSubRef.current?.remove?.();
       notifSubRef.current = null;
     };
-  }, [listenNotifications, language]);
+  }, [listenNotifications, checkMessage]);
 
-  const renderLogItem = ({ item }: { item: Log }) => {
+  // --- RENAMED renderLogItem to renderVisibleItem ---
+  // --- REMOVED Swipeable wrapper ---
+  const renderVisibleItem = ({ item }: { item: Log }) => {
     const time = new Date(item.receivedAt).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
@@ -371,13 +459,15 @@ function ActivityPage() {
       spamStatus === 1
         ? t.activity.pill.spam
         : spamStatus === 0.5
-          ? t.activity.pill.potential
-          : t.activity.pill.ok;
+        ? t.activity.pill.potential
+        : t.activity.pill.ok;
 
     return (
       <View style={styles.logCard}>
         <View style={styles.logHeader}>
-          <Text style={styles.logFrom}>{`${source} • ${from ?? t.ui.unknown}`}</Text>
+          <Text
+            style={styles.logFrom}
+          >{`${source} • ${from ?? t.ui.unknown}`}</Text>
           <Text style={{ color: '#6b7280' }}>{time}</Text>
         </View>
 
@@ -394,12 +484,20 @@ function ActivityPage() {
             <Pressable
               onPress={() => {
                 try {
-                  SmsIntentModule.openSmsApp(GATEWAY_NUMBER, JSON.stringify({ id, body }));
-                } catch { }
+                  SmsIntentModule.openSmsApp(
+                    GATEWAY_NUMBER,
+                    JSON.stringify({ id, body }),
+                  );
+                } catch {}
               }}
-              style={({ pressed }) => [styles.reportButton, pressed && { opacity: 0.85 }]}
+              style={({ pressed }) => [
+                styles.reportButton,
+                pressed && { opacity: 0.85 },
+              ]}
             >
-              <Text style={styles.reportButtonText}>{t.activity.reportButton}</Text>
+              <Text style={styles.reportButtonText}>
+                {t.activity.reportButton}
+              </Text>
             </Pressable>
           ) : null}
         </View>
@@ -407,8 +505,30 @@ function ActivityPage() {
     );
   };
 
+  // --- ADDED renderHiddenItem for SwipeListView ---
+  const renderHiddenItem = (
+    data: { item: Log },
+    rowMap: Record<string, { closeRow: () => void }>,
+  ) => {
+    const onDelete = () => {
+      if (rowMap[data.item.id]) {
+        rowMap[data.item.id].closeRow();
+      }
+      handleDeleteLog(data.item.id);
+    };
+
+    return (
+      <View style={styles.hiddenButtonContainer}>
+        <TouchableOpacity style={styles.hiddenButton} onPress={onDelete}>
+          <Text style={styles.hiddenButtonText}>{t.controls.deleted}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
     <View style={{ flex: 1 }}>
+      {/* --- Status Card (Unchanged) --- */}
       <View style={styles.centerCard}>
         <View style={styles.statusHeader}>
           <Text style={styles.statusLabel}>{t.listeningLabel}</Text>
@@ -417,8 +537,14 @@ function ActivityPage() {
         <View style={styles.statusItems}>
           {[
             { label: t.statusLabels.canListenSms, state: listenSms },
-            { label: t.statusLabels.canListenNotifications, state: listenNotifications },
-            { label: t.statusLabels.canPostNotifications, state: canSendNotifications },
+            {
+              label: t.statusLabels.canListenNotifications,
+              state: listenNotifications,
+            },
+            {
+              label: t.statusLabels.canPostNotifications,
+              state: canSendNotifications,
+            },
           ].map((item, index) => (
             <View key={index} style={styles.statusRow}>
               <View style={styles.rowLeft}>
@@ -430,7 +556,12 @@ function ActivityPage() {
                 />
                 <Text style={styles.statusRowLabel}>{item.label}</Text>
               </View>
-              <View style={[styles.badge, item.state ? styles.badgeOn : styles.badgeOff]}>
+              <View
+                style={[
+                  styles.badge,
+                  item.state ? styles.badgeOn : styles.badgeOff,
+                ]}
+              >
                 <Text
                   style={[
                     styles.badgeText,
@@ -448,29 +579,51 @@ function ActivityPage() {
       <View style={{ height: 50 }} />
 
       <View style={styles.logList}>
+        {/* --- Log Header Row (Unchanged) --- */}
         <View style={styles.logHeaderRow}>
-          <Text style={styles.logTitle}>{t.activity.logTitle}</Text>
-          <View style={styles.logCount}>
-            <Text style={styles.logCountText}>{logs.length}</Text>
+          <View style={styles.logTitleContainer}>
+            <Text style={styles.logTitle}>{t.activity.logTitle}</Text>
+        
+          </View>
+
+          <View style={styles.logHeaderRight}>
+          
+            <TouchableOpacity
+              onPress={handleClearAllLogs}
+              style={styles.clearButton}
+            >
+              <Text style={styles.clearButtonText}>{t.controls.clearLogs}</Text>
+            </TouchableOpacity>
+              <View style={styles.logCount}>
+              <Text style={styles.logCountText}>{logs.length}</Text>
+            </View>
           </View>
         </View>
 
-        <FlatList
+        {/* --- REPLACED FlatList with SwipeListView --- */}
+        <SwipeListView
           data={logs}
+          renderItem={renderVisibleItem}
+          renderHiddenItem={renderHiddenItem}
           keyExtractor={(i) => i.id}
-          renderItem={renderLogItem}
+          rightOpenValue={80} // Width of the delete button
+          disableLeftSwipe
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={{ color: '#6b7280' }}>{t.activity.noMessages}</Text>
             </View>
           }
           contentContainerStyle={{ paddingBottom: 60 }}
+          // Prevents list scroll while swiping a row
+          onRowOpen={() => {}}
+          onRowClose={() => {}}
+          // Stops keyboard from dismissing on tap (if applicable)
+          keyboardShouldPersistTaps={'handled'}
         />
       </View>
     </View>
   );
 }
-
 /* ------------------ Settings Page ------------------ */
 function SettingsPage() {
   const { language, setLanguage, listenSms, setListenSms, listenNotifications, setListenNotifications, canSendNotifications, setCanSendNotifications } =
@@ -630,8 +783,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   tabActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#1d4ed8',
+    backgroundColor: '#68ea7bff',
+    borderColor: '#68ea7bff',
   },
   tabText: { color: '#334155', fontWeight: '700' },
   tabTextActive: { color: '#fff' },
@@ -701,21 +854,11 @@ const styles = StyleSheet.create({
   ghostText: { color: '#333' },
 
   logList: { flex: 1, paddingHorizontal: 16, marginTop: 8 },
-  logHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  logTitle: { fontWeight: '700', fontSize: 16 },
   logCount: { backgroundColor: '#fff5f5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   logCountText: { color: '#dc2626', fontWeight: '700' },
 
   empty: { padding: 16, alignItems: 'center' },
 
-  logCard: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#f3f6f8',
-  },
   logHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   logFrom: { fontWeight: '700' },
   logBody: { color: '#222', marginBottom: 8 },
@@ -739,6 +882,24 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
+
+  deleteButton: {
+    backgroundColor: '#dc2626',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    width: 80,
+    // Match logCard's border radius and margin
+    borderRadius: 12, 
+    marginBottom: 10,
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+    paddingRight: 18,
+  },
+
+
 
   languageButton: {
     paddingHorizontal: 12,
@@ -938,6 +1099,86 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 13,
   },
+  
+  hiddenButtonContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    // Match logCard's margin and border radius
+    marginBottom: 10,
+    borderRadius: 12,
+    overflow: 'hidden', // Clip the button to the border radius
+  },
+  hiddenButton: {
+    backgroundColor: '#dc2626',
+    width: 80,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  hiddenButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+
+  // --- STYLES to REMOVE ---
+  /*
+  deleteButton: { ... },
+  deleteButtonText: { ... },
+  */
+
+  // --- MODIFIED STYLES ---
+  logCard: {
+    backgroundColor: '#fff', // This is CRITICAL - ensures it hides the hidden item
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#f3f6f8',
+  },
+  logHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    gap: 12,
+  },
+  logTitle: {
+    fontWeight: '700',
+    fontSize: 16,
+    color: '#0f172a',
+  },
+  logTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    flexShrink: 1,
+  },
+  logSubtitle: {
+    color: '#6b7280',
+    fontStyle: 'italic',
+    fontSize: 12,
+    paddingBottom: 1,
+    marginLeft: 4,
+  },
+  logHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  clearButton: {
+    backgroundColor: '#fff5f5',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  clearButtonText: {
+    color: '#ae3030ff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  
   badgeTextOn: { color: '#065f46' },
   badgeTextOff: { color: '#7f1d1d' },
   dropdownList: {},

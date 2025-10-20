@@ -19,6 +19,7 @@ class NotificationListener : NotificationListenerService() {
             packageName.contains("yahoo") ||
             packageName.contains("messenger") ||
             packageName.contains("telegram") ||
+            packageName.contains("outlook") ||
             packageName.contains("mail")
 
         ) {

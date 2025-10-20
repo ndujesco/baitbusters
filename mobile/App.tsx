@@ -24,7 +24,7 @@ import { SettingsProvider, useSettings } from './App/contexts';
 import { APP_DICTIONARY } from './App/constants';
 import PermissionStatus from './App/components/PermissionStatus';
 
-const { SmsListenerModule, NotificationListenerModule, NotificationSenderModule } =
+const { SmsListenerModule, NotificationListenerModule, NotificationSenderModule, SmsIntentModule } =
   (NativeModules as any) || {};
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -134,20 +134,17 @@ function ActivityPage() {
     from?: string | null;
     packageName?: string;
     body: string;
+    spamStatus: number;
     receivedAt: number;
   };
 
   const [logs, setLogs] = useState<Log[]>([]);
-  const [statusText, setStatusText] = useState<string>(t.smsStatusDisplay);
 
   const smsSubRef = useRef<EmitterSubscription | null>(null);
   const notifSubRef = useRef<EmitterSubscription | null>(null);
-  const recentMessagesRef = useRef<Set<string>>(new Set());
-  const idCounterRef = useRef<Record<string, number>>({});
+  const recentBodiesRef = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
-    setStatusText(t.smsStatusDisplay);
-  }, [t, listenSms]);
+
 
   const inferAppLabel = (pkg?: string) => {
     if (!pkg) return 'Unknown';
@@ -161,56 +158,74 @@ function ActivityPage() {
     return pkg;
   };
 
-  const pushLog = (entry: Omit<Log, 'id'>) => {
-    const keyBase = `${entry.source}|${entry.from}|${entry.body?.slice(0, 50)}`;
-    const count = (idCounterRef.current[keyBase] ?? 0) + 1;
-    idCounterRef.current[keyBase] = count;
-    setTimeout(() => delete idCounterRef.current[keyBase], 60_000);
-    const id = `${keyBase}_${count}`;
-
-    const dedupeKey = `${entry.source}|${entry.packageName ?? entry.from ?? entry.body}`;
-    if (recentMessagesRef.current.has(dedupeKey)) return;
-    recentMessagesRef.current.add(dedupeKey);
-    setTimeout(() => recentMessagesRef.current.delete(dedupeKey), 30_000);
-
-    const log: Log = { id, ...entry };
-    setLogs((prev) => [log, ...prev].slice(0, 200));
-  };
-
-  const checkMessage = (entry: Omit<Log, 'id'>) => {
+  const checkMessage = (entry: Omit<Log, 'id' | 'spamStatus'>) => {
     const { body, from } = entry;
-    if (logs.some(log => log.body === body)) return
+    if (!body) return;
+
+    // Immediate short-term dedupe (protects against duplicate native events)
+    if (recentBodiesRef.current.has(body)) return;
+    recentBodiesRef.current.add(body);
+    // keep dedupe for 30s
+    // setTimeout(() => recentBodiesRef.current.delete(body), 30_000);
+
+    // Also check persistent logs state (double-check; helps after app restart etc)
+    if (logs.some((log) => log.body === body)) return;
 
     const spamStatus = checkSpamStatus(body);
 
-    if (spamStatus === 0) { return; }
-    else if (spamStatus === 0.5) {
+    // Not spam -> ignore entirely
+    if (spamStatus === 0) return;
+
+    const id = `${Date.now()}`; // millisecond timestamp id
+
+
+    // Potential spam -> gentle notify, don't push to logs
+    if (spamStatus === 0.5) {
       if (canSendNotifications && NotificationSenderModule) {
+        const smsBody = JSON.stringify({ id, body })
         try {
           NotificationSenderModule?.sendNotificationWithSmsAction?.(
             `From ${from}`,
-            `"${body}" — ${APP_DICTIONARY[language].activity.potentialSpam}`,
+            `"${APP_DICTIONARY[language].activity.potentialSpam}`,
             'REPORT',
             GATEWAY_NUMBER,
-            `Reporting suspicious message: "${body}"`,
+            smsBody,
           );
-        } catch { }
+        } catch {
+          // ignore
+        }
       }
-      return;
-    } else {
+    }
+
+    if (spamStatus === 1) {
+
+      // Definite spam -> high-priority alert + push to logs
       try {
-        // call the high priority alert (native)
         NotificationSenderModule?.sendHighPriorityAlert?.(
           `${APP_DICTIONARY[language].activity.spamDetected}`,
-          `From: ${from} — "${body}"`
+          `From: ${from} — "${body}"`,
         );
-      } catch { /* ignore */ }
-
-      pushLog({ ...entry });
+      } catch {
+        // ignore
+      }
     }
+
+
+    const log: Log = {
+      id,
+      ...entry,
+      receivedAt: entry.receivedAt ?? Date.now(),
+      spamStatus,
+    };
+
+    // Use functional update and re-check inside to avoid race duplicates
+    setLogs((prev) => {
+      if (prev.some((l) => l.body === body)) return prev;
+      return [log, ...prev].slice(0, 200);
+    });
   };
 
-  // SMS listener
+
   useEffect(() => {
     if (!listenSms) {
       try { SmsListenerModule?.stopListeningToSMS(); } catch { }
@@ -218,7 +233,6 @@ function ActivityPage() {
         try { smsSubRef.current.remove(); } catch { }
         smsSubRef.current = null;
       }
-      setStatusText('Stopped');
       return;
     }
 
@@ -238,7 +252,6 @@ function ActivityPage() {
     });
 
     smsSubRef.current = sub;
-    setStatusText(t.smsStatusDisplay);
 
     return () => {
       try { SmsListenerModule?.stopListeningToSMS(); } catch { }
@@ -299,7 +312,14 @@ function ActivityPage() {
     const time = new Date(item.receivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const label = item.source;
     const from = item.from ?? 'unknown';
-    const statusColor = '#ef4444';
+    const spamStatus = (item as any).spamStatus ?? 0;
+    const { id, body } = item
+
+
+    // colours: definite spam = red, possible = amber, ok = green
+    const bodyColor = spamStatus === 1 ? '#b91c1c' : spamStatus === 0.5 ? '#f59e0b' : '#16a34a';
+    const pillText = spamStatus === 1 ? 'SPAM' : spamStatus === 0.5 ? 'Potential' : 'OK';
+    const pillColor = bodyColor;
 
     return (
       <View style={styles.logCard}>
@@ -308,68 +328,86 @@ function ActivityPage() {
           <Text style={{ color: '#6b7280' }}>{time}</Text>
         </View>
 
-        <Text style={[styles.logBody, { color: '#b91c1c' }]} numberOfLines={3}>
-          {item.body}
+        <Text style={[styles.logBody, { color: bodyColor }]} numberOfLines={3}>
+          {body}
         </Text>
 
         <View style={styles.logFooter}>
-          <View style={[styles.statusPill, { backgroundColor: statusColor }]}>
-            <Text style={styles.statusPillText}>{'SPAM'}</Text>
+          <View style={[styles.statusPill, { backgroundColor: pillColor }]}>
+            <Text style={styles.statusPillText}>{pillText}</Text>
           </View>
+
+          {/* Report button for potential spam (spamStatus === 0.5) */}
+          {spamStatus === 0.5 ? (
+            <Pressable
+              onPress={() => {
+                try {
+                  SmsIntentModule.openSmsApp(GATEWAY_NUMBER, JSON.stringify({ id, body }))
+
+                } catch {
+                  // ignore if not defined yet
+                }
+              }}
+              style={({ pressed }) => [styles.reportButton, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.reportButtonText}>Report</Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     );
   };
 
+
   return (
     <View style={{ flex: 1 }}>
       {/* top status card */}
-  <View style={styles.centerCard}>
-  <View style={styles.statusHeader}>
-    <View>
-      <Text style={styles.statusLabel}>{t.listeningLabel}</Text>
-      {/* <Text style={styles.statusHint}>{t.smsStatusDisplay}</Text> */}
-    </View>
-  </View>
+      <View style={styles.centerCard}>
+        <View style={styles.statusHeader}>
+          <View>
+            <Text style={styles.statusLabel}>{t.listeningLabel}</Text>
+            {/* <Text style={styles.statusHint}>{t.smsStatusDisplay}</Text> */}
+          </View>
+        </View>
 
-  <View style={styles.statusItems}>
-    <View style={styles.statusRow}>
-      <View style={styles.rowLeft}>
-        <View style={[styles.indicator, listenSms ? styles.indicatorOn : styles.indicatorOff]} />
-        <Text style={styles.statusRowLabel}>Can listen to SMS</Text>
-      </View>
-      <View style={[styles.badge, listenSms ? styles.badgeOn : styles.badgeOff]}>
-        <Text style={[styles.badgeText, listenSms ? styles.badgeTextOn : styles.badgeTextOff]}>
-          {listenSms ? 'Yes' : 'No'}
-        </Text>
-      </View>
-    </View>
+        <View style={styles.statusItems}>
+          <View style={styles.statusRow}>
+            <View style={styles.rowLeft}>
+              <View style={[styles.indicator, listenSms ? styles.indicatorOn : styles.indicatorOff]} />
+              <Text style={styles.statusRowLabel}>Can listen to SMS</Text>
+            </View>
+            <View style={[styles.badge, listenSms ? styles.badgeOn : styles.badgeOff]}>
+              <Text style={[styles.badgeText, listenSms ? styles.badgeTextOn : styles.badgeTextOff]}>
+                {listenSms ? 'Yes' : 'No'}
+              </Text>
+            </View>
+          </View>
 
-    <View style={styles.statusRow}>
-      <View style={styles.rowLeft}>
-        <View style={[styles.indicator, listenNotifications ? styles.indicatorOn : styles.indicatorOff]} />
-        <Text style={styles.statusRowLabel}>Can listen to notifications</Text>
-      </View>
-      <View style={[styles.badge, listenNotifications ? styles.badgeOn : styles.badgeOff]}>
-        <Text style={[styles.badgeText, listenNotifications ? styles.badgeTextOn : styles.badgeTextOff]}>
-          {listenNotifications ? 'Yes' : 'No'}
-        </Text>
-      </View>
-    </View>
+          <View style={styles.statusRow}>
+            <View style={styles.rowLeft}>
+              <View style={[styles.indicator, listenNotifications ? styles.indicatorOn : styles.indicatorOff]} />
+              <Text style={styles.statusRowLabel}>Can listen to notifications</Text>
+            </View>
+            <View style={[styles.badge, listenNotifications ? styles.badgeOn : styles.badgeOff]}>
+              <Text style={[styles.badgeText, listenNotifications ? styles.badgeTextOn : styles.badgeTextOff]}>
+                {listenNotifications ? 'Yes' : 'No'}
+              </Text>
+            </View>
+          </View>
 
-    <View style={styles.statusRow}>
-      <View style={styles.rowLeft}>
-        <View style={[styles.indicator, canSendNotifications ? styles.indicatorOn : styles.indicatorOff]} />
-        <Text style={styles.statusRowLabel}>Can post notifications</Text>
+          <View style={styles.statusRow}>
+            <View style={styles.rowLeft}>
+              <View style={[styles.indicator, canSendNotifications ? styles.indicatorOn : styles.indicatorOff]} />
+              <Text style={styles.statusRowLabel}>Can post notifications</Text>
+            </View>
+            <View style={[styles.badge, canSendNotifications ? styles.badgeOn : styles.badgeOff]}>
+              <Text style={[styles.badgeText, canSendNotifications ? styles.badgeTextOn : styles.badgeTextOff]}>
+                {canSendNotifications ? 'Yes' : 'No'}
+              </Text>
+            </View>
+          </View>
+        </View>
       </View>
-      <View style={[styles.badge, canSendNotifications ? styles.badgeOn : styles.badgeOff]}>
-        <Text style={[styles.badgeText, canSendNotifications ? styles.badgeTextOn : styles.badgeTextOff]}>
-          {canSendNotifications ? 'Yes' : 'No'}
-        </Text>
-      </View>
-    </View>
-  </View>
-</View>
 
 
       {/* spacing between card and logs for elegance */}
@@ -789,87 +827,105 @@ const styles = StyleSheet.create({
     color: '#16a34a',
     fontWeight: '800',
   },
-/* Status card header & items */
-statusHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'flex-start',
-  paddingBottom: 8,
-},
-statusHint: {
-  color: '#64748b',
-  fontSize: 12,
-  marginTop: 6,
-  maxWidth: '86%',
-},
+  /* Status card header & items */
+  statusHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingBottom: 8,
+  },
+  statusHint: {
+    color: '#64748b',
+    fontSize: 12,
+    marginTop: 6,
+    maxWidth: '86%',
+  },
 
-/* list container inside the card */
-statusItems: {
-  marginTop: 8,
-  borderTopWidth: 1,
-  borderTopColor: '#eef2f6',
-  paddingTop: 10,
-},
+  /* list container inside the card */
+  statusItems: {
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#eef2f6',
+    paddingTop: 10,
+  },
+  reportButton: {
+    backgroundColor: '#ffffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  reportButtonText: {
+    color: '#8c1212ff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
 
-/* each row */
-statusRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  paddingVertical: 8,
-  // subtle divider between rows
-  borderBottomWidth: 1,
-  borderBottomColor: '#f5f7fa',
-},
 
-rowLeft: {
-  flexDirection: 'row',
-  alignItems: 'center',
-},
+  /* each row */
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    // subtle divider between rows
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f7fa',
+  },
 
-/* small dot indicator */
-indicator: {
-  width: 10,
-  height: 10,
-  borderRadius: 6,
-  marginRight: 10,
-  borderWidth: 1,
-  borderColor: 'rgba(0,0,0,0.06)',
-},
-indicatorOn: { backgroundColor: '#16a34a' },
-indicatorOff: { backgroundColor: '#ef4444' },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
 
-/* row label */
-statusRowLabel: {
-  color: '#0f172a',
-  fontWeight: '600',
-},
+  /* small dot indicator */
+  indicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 6,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+  },
+  indicatorOn: { backgroundColor: '#16a34a' },
+  indicatorOff: { backgroundColor: '#ef4444' },
 
-/* pill / badge on the right */
-badge: {
-  paddingHorizontal: 12,
-  paddingVertical: 6,
-  borderRadius: 20,
-  minWidth: 64,
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-badgeOn: {
-  backgroundColor: '#ecfdf5', // light green bg
-  borderWidth: 1,
-  borderColor: '#bbf7d0',
-},
-badgeOff: {
-  backgroundColor: '#fff1f2', // light red bg
-  borderWidth: 1,
-  borderColor: '#fecaca',
-},
-badgeText: {
-  fontWeight: '700',
-  fontSize: 13,
-},
-badgeTextOn: { color: '#065f46' },
-badgeTextOff: { color: '#7f1d1d' },
+  /* row label */
+  statusRowLabel: {
+    color: '#0f172a',
+    fontWeight: '600',
+  },
+
+  /* pill / badge on the right */
+  badge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    minWidth: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeOn: {
+    backgroundColor: '#ecfdf5', // light green bg
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  badgeOff: {
+    backgroundColor: '#fff1f2', // light red bg
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  badgeText: {
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  badgeTextOn: { color: '#065f46' },
+  badgeTextOff: { color: '#7f1d1d' },
 
 
   dropdownList: { /* kept for compatibility if used elsewhere */ },

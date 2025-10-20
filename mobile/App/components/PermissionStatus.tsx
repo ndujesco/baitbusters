@@ -1,6 +1,14 @@
 // components/PermissionStatus.tsx
-import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Animated,
+  AccessibilityRole,
+  Platform,
+} from 'react-native';
 
 type Props = {
   title: string;
@@ -10,21 +18,61 @@ type Props = {
 };
 
 export default function PermissionStatus({ title, granted, onRequest, subtitle }: Props) {
+  // animated value: 0 (off) -> 1 (on)
+  const anim = useRef(new Animated.Value(granted ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: granted ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [granted, anim]);
+
+  // knob translateX interpolation
+  const knobTranslate = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 18], // knob moves 18 px on our track
+  });
+
+  const trackBg = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(239, 68, 68, 0.12)', 'rgba(22, 183, 129, 0.12)'],
+  });
+
+  const accessibilityState = { checked: granted };
+
   return (
     <View style={styles.container}>
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>{title}</Text>
-        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
 
       <Pressable
-        style={({ pressed }) => [styles.radioContainer, { opacity: pressed ? 0.75 : 1 }]}
         onPress={onRequest}
+        android_ripple={{ color: 'rgba(0,0,0,0.06)', borderless: true }}
+        accessibilityRole={'switch' as AccessibilityRole}
+        accessibilityLabel={title}
+        accessibilityState={accessibilityState}
+        style={({ pressed }) => [
+          styles.toggleWrapper,
+          pressed && Platform.OS === 'ios' ? { opacity: 0.7 } : {},
+        ]}
       >
-        <View style={[styles.radioOuter, { borderColor: granted ? '#16a34a' : '#ef4444' }]}>
-          {granted && <View style={styles.radioInner} />}
-        </View>
-        <Text style={[styles.stateText, { color: granted ? '#16a34a' : '#ef4444' }]}>
+        <Animated.View style={[styles.track, { backgroundColor: trackBg as any }]}>
+          <Animated.View
+            style={[
+              styles.knob,
+              {
+                transform: [{ translateX: knobTranslate }],
+                // subtle shadow/highlight
+              },
+            ]}
+          />
+        </Animated.View>
+
+        <Text style={[styles.stateText, granted ? styles.stateOn : styles.stateOff]}>
           {granted ? 'Enabled' : 'Off'}
         </Text>
       </Pressable>
@@ -44,30 +92,44 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f3f4f6',
   },
-  title: { color: '#111827', fontWeight: '700', fontSize: 15 },
-  subtitle: { color: '#6b7280', fontSize: 12, marginTop: 3 },
-  radioContainer: {
+  title: { color: '#0f172a', fontWeight: '700', fontSize: 15 },
+  subtitle: { color: '#64748b', fontSize: 12, marginTop: 4 },
+
+  toggleWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
-  radioOuter: {
+
+  // track
+  track: {
+    width: 46,
+    height: 28,
+    borderRadius: 28,
+    justifyContent: 'center',
+    padding: 3,
+  },
+
+  // knob (circle)
+  knob: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
   },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#16a34a',
-  },
+
   stateText: {
-    fontWeight: '600',
+    fontWeight: '700',
     fontSize: 13,
     marginLeft: 8,
   },
+  stateOn: { color: '#0c5440ff' }, // dark green
+  stateOff: { color: '#7f1d1d' }, // dark red
 });

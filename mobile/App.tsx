@@ -230,7 +230,7 @@ function ActivityPage() {
             GATEWAY_NUMBER,
             smsBody,
           );
-        } catch {}
+        } catch { }
       }
 
       if (spamStatus === 1) {
@@ -239,7 +239,7 @@ function ActivityPage() {
             `${t.activity.spamDetected}`,
             `${t.general.from}: ${from} — "${body}"`,
           );
-        } catch {}
+        } catch { }
       }
 
       const log: Log = {
@@ -256,6 +256,7 @@ function ActivityPage() {
 
   const updateSpamStatus = useCallback(
     (messageBody: string) => {
+      if (messageBody == "-1") { return }
       const data = safeJsonParse(messageBody);
       if (!data || typeof data !== 'object') return;
 
@@ -292,7 +293,7 @@ function ActivityPage() {
               `${t.activity.spamDetected}`,
               `${t.general.from}: ${foundLog.from} — "${foundLog.body}"`,
             );
-          } catch {}
+          } catch { }
         }
 
         return logWasFound ? updated : prevLogs;
@@ -330,7 +331,7 @@ function ActivityPage() {
     if (!listenSms) {
       try {
         SmsListenerModule?.stopListeningToSMS();
-      } catch {}
+      } catch { }
       smsSubRef.current?.remove?.();
       smsSubRef.current = null;
       return;
@@ -370,7 +371,7 @@ function ActivityPage() {
     return () => {
       try {
         SmsListenerModule?.stopListeningToSMS();
-      } catch {}
+      } catch { }
       smsSubRef.current?.remove?.();
       smsSubRef.current = null;
     };
@@ -459,8 +460,8 @@ function ActivityPage() {
       spamStatus === 1
         ? t.activity.pill.spam
         : spamStatus === 0.5
-        ? t.activity.pill.potential
-        : t.activity.pill.ok;
+          ? t.activity.pill.potential
+          : t.activity.pill.ok;
 
     return (
       <View style={styles.logCard}>
@@ -488,7 +489,7 @@ function ActivityPage() {
                     GATEWAY_NUMBER,
                     JSON.stringify({ id, body }),
                   );
-                } catch {}
+                } catch { }
               }}
               style={({ pressed }) => [
                 styles.reportButton,
@@ -583,18 +584,18 @@ function ActivityPage() {
         <View style={styles.logHeaderRow}>
           <View style={styles.logTitleContainer}>
             <Text style={styles.logTitle}>{t.activity.logTitle}</Text>
-        
+
           </View>
 
           <View style={styles.logHeaderRight}>
-          
+
             <TouchableOpacity
               onPress={handleClearAllLogs}
               style={styles.clearButton}
             >
               <Text style={styles.clearButtonText}>{t.controls.clearLogs}</Text>
             </TouchableOpacity>
-              <View style={styles.logCount}>
+            <View style={styles.logCount}>
               <Text style={styles.logCountText}>{logs.length}</Text>
             </View>
           </View>
@@ -615,8 +616,8 @@ function ActivityPage() {
           }
           contentContainerStyle={{ paddingBottom: 60 }}
           // Prevents list scroll while swiping a row
-          onRowOpen={() => {}}
-          onRowClose={() => {}}
+          onRowOpen={() => { }}
+          onRowClose={() => { }}
           // Stops keyboard from dismissing on tap (if applicable)
           keyboardShouldPersistTaps={'handled'}
         />
@@ -889,7 +890,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     width: 80,
     // Match logCard's border radius and margin
-    borderRadius: 12, 
+    borderRadius: 12,
     marginBottom: 10,
   },
   deleteButtonText: {
@@ -1099,7 +1100,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 13,
   },
-  
+
   hiddenButtonContainer: {
     flex: 1,
     flexDirection: 'row',
@@ -1178,7 +1179,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 13,
   },
-  
+
   badgeTextOn: { color: '#065f46' },
   badgeTextOff: { color: '#7f1d1d' },
   dropdownList: {},

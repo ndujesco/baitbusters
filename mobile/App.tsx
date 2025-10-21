@@ -32,7 +32,7 @@ const { SmsListenerModule, NotificationListenerModule, NotificationSenderModule,
   (NativeModules as any) || {};
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const GATEWAY_NUMBER = '07061217361';
+const GATEWAY_NUMBER = '07041556156';
 
 type Log = {
   id: string;
@@ -260,7 +260,7 @@ function ActivityPage() {
       const data = safeJsonParse(messageBody);
       if (!data || typeof data !== 'object') return;
 
-      const { id, spamStatus } = data as any;
+      const { id, spam_status: spamStatus } = data as any;
       if (typeof id !== 'string') return;
 
       const numericSpamStatus =
@@ -388,6 +388,8 @@ function ActivityPage() {
     const sub = DeviceEventEmitter.addListener(
       'onNotificationReceived',
       (notification: any) => {
+            showToast('notification')
+
         const data =
           typeof notification === 'string'
             ? safeJsonParse(notification)

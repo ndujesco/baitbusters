@@ -226,6 +226,7 @@ function MainApp() {
 
     let backendReply: string | undefined;
     try {
+      showToast('Sending to backend')
       const res = await fetch(BACKEND_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

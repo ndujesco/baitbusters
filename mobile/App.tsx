@@ -508,25 +508,25 @@ function ActivityPage() {
   };
 
   // --- ADDED renderHiddenItem for SwipeListView ---
-  const renderHiddenItem = (
-    data: { item: Log },
-    rowMap: Record<string, { closeRow: () => void }>,
-  ) => {
-    const onDelete = () => {
-      if (rowMap[data.item.id]) {
-        rowMap[data.item.id].closeRow();
-      }
-      handleDeleteLog(data.item.id);
-    };
+  // const renderHiddenItem = (
+  //   data: { item: Log },
+  //   rowMap: Record<string, { closeRow: () => void }>,
+  // ) => {
+  //   const onDelete = () => {
+  //     if (rowMap[data.item.id]) {
+  //       rowMap[data.item.id].closeRow();
+  //     }
+  //     handleDeleteLog(data.item.id);
+  //   };
 
-    return (
-      <View style={styles.hiddenButtonContainer}>
-        <TouchableOpacity style={styles.hiddenButton} onPress={onDelete}>
-          <Text style={styles.hiddenButtonText}>{t.controls.deleted}</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
+  //   return (
+  //     <View style={styles.hiddenButtonContainer}>
+  //       <TouchableOpacity style={styles.hiddenButton} onPress={onDelete}>
+  //         <Text style={styles.hiddenButtonText}>{t.controls.deleted}</Text>
+  //       </TouchableOpacity>
+  //     </View>
+  //   );
+  // };
 
   return (
     <View style={{ flex: 1 }}>
@@ -606,7 +606,7 @@ function ActivityPage() {
         <SwipeListView
           data={logs}
           renderItem={renderVisibleItem}
-          renderHiddenItem={renderHiddenItem}
+          // renderHiddenItem={renderHiddenItem}
           keyExtractor={(i) => i.id}
           rightOpenValue={80} // Width of the delete button
           disableLeftSwipe

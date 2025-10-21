@@ -388,7 +388,6 @@ function ActivityPage() {
     const sub = DeviceEventEmitter.addListener(
       'onNotificationReceived',
       (notification: any) => {
-            showToast('notification')
 
         const data =
           typeof notification === 'string'

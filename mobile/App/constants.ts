@@ -83,7 +83,7 @@ export const APP_DICTIONARY: Record<
     somethingCount: (count: number) => `You have ${count} new messages`,
     languageOptionsDisplay: [
       { key: 'english', label: 'English' },
-      { key: 'french', label: 'Fench' },
+      { key: 'french', label: 'French' },
       { key: 'hausa', label: 'Hausa' },
       { key: 'yoruba', label: 'Yoruba' },
       { key: 'swahili', label: 'Swahili' },
@@ -359,7 +359,7 @@ languageOptionsDisplay: [
     },
     settings: {
       title: 'Ètò',
-      languageLabel: 'Ede',
+      languageLabel: 'Èdè',
       persistNotice: 'A n fi ede ati àwọn ètò pamọ́ sí agbègbè',
       spamFilterLabel: 'Ajẹsẹ ifiranṣẹ pàápàà (fi bvn ranṣẹ / fi nin ranṣẹ)',
     },

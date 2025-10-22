@@ -6,6 +6,26 @@ const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
  *
  * @type {import('@react-native/metro-config').MetroConfig}
  */
-const config = {};
+const defaultConfig = getDefaultConfig(__dirname);
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+const customConfig = {
+  transformer: {
+    getTransformOptions: async () => ({
+      transform: {
+        experimentalImportSupport: false,
+        inlineRequires: true,
+      },
+    }),
+  },
+  resolver: {
+    // Add 'onnx' and 'ort' to the list of asset extensions.
+    assetExts: [
+      ...defaultConfig.resolver.assetExts.filter(ext => ext !== 'svg'),
+      'onnx',
+      'ort',
+    ],
+    sourceExts: [...defaultConfig.resolver.sourceExts, 'svg'],
+  },
+};
+
+module.exports = mergeConfig(defaultConfig, customConfig);

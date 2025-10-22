@@ -27,6 +27,7 @@ import { SettingsProvider, useSettings } from './App/contexts';
 import { APP_DICTIONARY } from './App/constants';
 import PermissionStatus from './App/components/PermissionStatus';
 import { SwipeListView } from 'react-native-swipe-list-view';
+import { checkPhishing } from './App/model';
 
 const { SmsListenerModule, NotificationListenerModule, NotificationSenderModule, SmsIntentModule } =
   (NativeModules as any) || {};
@@ -52,11 +53,6 @@ const normalizePhone = (num: string) => {
   return n;
 };
 
-function checkSpamStatus(message: string) {
-  if (message.includes("This is definitely a spam message")) { return 1; }
-  else if (message.includes("This may be a spam message")) { return 0.5 }
-  else { return 0 }
-}
 
 function safeJsonParse(input: string | null | undefined) {
   if (!input) return null;
@@ -204,14 +200,14 @@ function ActivityPage() {
   }, []);
 
   const checkMessage = useCallback(
-    (entry: Omit<Log, 'id' | 'spamStatus'>) => {
+    async (entry: Omit<Log, 'id' | 'spamStatus'>) => {
       const { body, from } = entry;
       if (!body) return;
 
       if (recentBodiesRef.current.has(body)) return;
       recentBodiesRef.current.add(body);
 
-      const spamStatus = checkSpamStatus(body);
+      const spamStatus = await checkPhishing(body);
       if (spamStatus === 0) return;
 
       const id = `${Date.now()}`;
@@ -389,6 +385,9 @@ function ActivityPage() {
       'onNotificationReceived',
       (notification: any) => {
 
+
+        Alert.alert("Hmm")
+
         const data =
           typeof notification === 'string'
             ? safeJsonParse(notification)
@@ -396,6 +395,7 @@ function ActivityPage() {
         if (!data) return;
 
         const { packageName, title, text } = data;
+        showToast(text)
         const messagingApps = [
           'whatsapp',
           'gmail',

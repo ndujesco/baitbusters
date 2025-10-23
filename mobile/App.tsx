@@ -3,15 +3,11 @@ import React, {  useRef, useState } from 'react';
 import {
 
   FlatList,
-  NativeModules,
-  Platform,
   Pressable,
   StatusBar,
   StyleSheet,
   Text,
-  ToastAndroid,
   View,
-  Dimensions,
 
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -95,11 +91,7 @@ function MainApp() {
   return <MainAppInner />;
 }
 
-/* ------------------ Activity Page ------------------ */
 
-/* ------------------ Settings Page ------------------ */
-
-/* ------------------ Styles ------------------ */
 // (unchanged — kept your original styles)
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },

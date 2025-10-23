@@ -49,24 +49,36 @@ class NotificationListenerModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-fun isPermissionGranted(promise: Promise) {
-    try {
-        val enabledListeners = Settings.Secure.getString(
-            reactApplicationContext.contentResolver,
-            "enabled_notification_listeners"
-        ) ?: ""
+        fun isPermissionGranted(promise: Promise) {
+            try {
+                val enabledListeners = Settings.Secure.getString(
+                    reactApplicationContext.contentResolver,
+                    "enabled_notification_listeners"
+                ) ?: ""
 
-        // Correctly point to your NotificationListener service
-        val cn = ComponentName(
-            reactApplicationContext,
-            NotificationListener::class.java // <-- THE FIX IS HERE
-        )
+                // Correctly point to your NotificationListener service
+                val cn = ComponentName(
+                    reactApplicationContext,
+                    NotificationListener::class.java // <-- THE FIX IS HERE
+                )
 
-        // Check if your service is in the enabled list
-        val granted = enabledListeners.contains(cn.flattenToString())
-        promise.resolve(granted)
-    } catch (e: Exception) {
-        promise.reject("ERROR_CHECKING_PERMISSION", e)
-    }
-}
+                // Check if your service is in the enabled list
+                val granted = enabledListeners.contains(cn.flattenToString())
+                promise.resolve(granted)
+            } catch (e: Exception) {
+                promise.reject("ERROR_CHECKING_PERMISSION", e)
+            }
+        }
+
+        @ReactMethod
+        fun ensureServiceRunning() {
+            try {
+                val context = reactApplicationContext
+                val intent = Intent(context, NotificationListener::class.java)
+                context.startService(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
 }

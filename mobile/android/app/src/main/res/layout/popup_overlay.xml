@@ -1,0 +1,56 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#E6FFEBEE"       
+    android:elevation="12dp"
+    android:layout_gravity="center"
+    android:gravity="center"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="16dp"
+    android:clipToOutline="true"
+    android:backgroundTintMode="src_over">
+
+    <!-- Red Warning Icon -->
+    <ImageView
+        android:src="@android:drawable/ic_dialog_alert"
+        android:tint="#D50000"
+        android:layout_marginBottom="12dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp" />
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/popupTitle"
+        android:text="⚠️ WARNING!"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="#B71C1C"
+        android:layout_marginBottom="8dp"
+        android:gravity="center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <!-- Message -->
+    <TextView
+        android:id="@+id/popupMessage"
+        android:text="A critical issue requires your attention!"
+        android:textSize="16sp"
+        android:textColor="#3E2723"
+        android:gravity="center"
+        android:layout_marginBottom="20dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <!-- Close Button -->
+    <Button
+        android:id="@+id/popupClose"
+        android:text="DISMISS"
+        android:backgroundTint="#B71C1C"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+</LinearLayout>

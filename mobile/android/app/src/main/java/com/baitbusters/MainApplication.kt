@@ -19,6 +19,9 @@ class MainApplication : Application(), ReactApplication {
           add(NotificationListenerPackage()) 
           add(NotificationSenderPackage())
           add(SmsIntentPackage())
+          add(OverlayPermissionPackage())
+          add(NotificationPopupPackage())
+
         },
     )
   }

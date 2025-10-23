@@ -2,7 +2,7 @@
 
 // contexts.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { PermissionsAndroid, Platform, NativeModules } from 'react-native';
+import { PermissionsAndroid, Platform, NativeModules, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { APP_DICTIONARY, type LangKey } from './constants';
 
@@ -11,14 +11,17 @@ type SettingsState = {
   listenSms: boolean;
   listenNotifications: boolean;
   canSendNotifications: boolean;
+  canDisplayOverApps: boolean;
   setLanguage: (l: LangKey) => void;
   refreshPermissions: () => Promise<void>;
+
+  setCanDisplayOverApps: React.Dispatch<React.SetStateAction<boolean>>;
   setListenSms: React.Dispatch<React.SetStateAction<boolean>>;
   setListenNotifications: React.Dispatch<React.SetStateAction<boolean>>;
   setCanSendNotifications: React.Dispatch<React.SetStateAction<boolean>>;
 };
 const STORAGE_KEY = '@baitbusters_settings_v1';
-const { NotificationListenerModule } = NativeModules as any || {};
+const { NotificationListenerModule, OverlayPermissionModule } = NativeModules as any || {};
 
 const SettingsContext = createContext<SettingsState | undefined>(undefined);
 
@@ -33,6 +36,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   const [listenSms, setListenSms] = useState(false);
   const [listenNotifications, setListenNotifications] = useState(false);
   const [canSendNotifications, setCanSendNotifications] = useState(false);
+  const [canDisplayOverApps, setCanDisplayOverApps] = useState(false);
+
 
   // Load language only (persistent)
   useEffect(() => {
@@ -60,6 +65,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     })();
   }, [language]);
 
+
+
   // Check real permissions (not stored)
   const refreshPermissions = async () => {
     try {
@@ -84,6 +91,13 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
       } else {
         setListenNotifications(false);
       }
+
+    const granted = await OverlayPermissionModule.isPermissionGranted();
+        if (!granted) {
+     setCanDisplayOverApps(false)
+    } else {
+      setCanDisplayOverApps(true)
+    }
     } catch (e) {
       console.warn('Failed to refresh permissions', e);
     }
@@ -101,10 +115,12 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         listenSms,
         listenNotifications,
         canSendNotifications,
+        canDisplayOverApps,
         setLanguage,
         refreshPermissions,
         setListenSms,
         setListenNotifications,
+        setCanDisplayOverApps,
         setCanSendNotifications,
       }}
     >

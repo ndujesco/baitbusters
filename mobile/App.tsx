@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   DeviceEventEmitter,
+  NativeEventEmitter,
   FlatList,
   Modal,
   NativeModules,
@@ -21,6 +22,7 @@ import {
   TouchableOpacity,
   Alert,
   Animated,
+  Linking,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingsProvider, useSettings } from './App/contexts';
@@ -29,7 +31,7 @@ import PermissionStatus from './App/components/PermissionStatus';
 import { SwipeListView } from 'react-native-swipe-list-view';
 import { checkPhishing } from './App/model';
 
-const { SmsListenerModule, NotificationListenerModule, NotificationSenderModule, SmsIntentModule } =
+const { SmsListenerModule, NotificationListenerModule, SmsSenderModule, SmsIntentModule, NotificationPopupModule, OverlayPermissionModule} =
   (NativeModules as any) || {};
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -143,7 +145,7 @@ function MainApp() {
 
 /* ------------------ Activity Page ------------------ */
 function ActivityPage() {
-  const { language, listenSms, listenNotifications, canSendNotifications } =
+  const { language, listenSms, listenNotifications, canSendNotifications, canDisplayOverApps } =
     useSettings();
   const t = APP_DICTIONARY[language];
 
@@ -214,26 +216,21 @@ function ActivityPage() {
 
       if (
         spamStatus === 0.5 &&
-        canSendNotifications &&
-        NotificationSenderModule
+        canDisplayOverApps
       ) {
         try {
           const smsBody = JSON.stringify({ id, body });
-          NotificationSenderModule?.sendNotificationWithSmsAction?.(
-            `${t.general.from}: ${from}`,
-            `"${t.activity.potentialSpam}"`,
-            'REPORT',
-            GATEWAY_NUMBER,
-            smsBody,
-          );
+          showToast(body)
+          SmsSenderModule?.sendSMS(GATEWAY_NUMBER, smsBody)
         } catch { }
       }
 
       if (spamStatus === 1) {
         try {
-          NotificationSenderModule?.sendHighPriorityAlert?.(
+          NotificationPopupModule?.showOverlayPopup?.(
             `${t.activity.spamDetected}`,
             `${t.general.from}: ${from} — "${body}"`,
+            "CLOSE"
           );
         } catch { }
       }
@@ -285,10 +282,13 @@ function ActivityPage() {
 
         if (foundLog) {
           try {
-            NotificationSenderModule?.sendHighPriorityAlert?.(
+            NotificationPopupModule?.showOverlayPopup?.(
               `${t.activity.spamDetected}`,
               `${t.general.from}: ${foundLog.from} — "${foundLog.body}"`,
+            "CLOSE"
+
             );
+         
           } catch { }
         }
 
@@ -347,6 +347,7 @@ function ActivityPage() {
         if (!data) return;
         const { senderPhoneNumber: from, messageBody: body } = data;
 
+
         if (normalizePhone(from) === GATEWAY_NUMBER) {
           updateSpamStatus(body);
           return;
@@ -379,14 +380,13 @@ function ActivityPage() {
       notifSubRef.current?.remove?.();
       notifSubRef.current = null;
       return;
-    }
-    // ... (rest of effect is unchanged)
+    } 
+
+    NotificationListenerModule?.ensureServiceRunning?.();
+
     const sub = DeviceEventEmitter.addListener(
       'onNotificationReceived',
       (notification: any) => {
-
-
-        Alert.alert("Hmm")
 
         const data =
           typeof notification === 'string'
@@ -486,7 +486,7 @@ function ActivityPage() {
             <Pressable
               onPress={() => {
                 try {
-                  SmsIntentModule.openSmsApp(
+                  SmsSenderModule.sendSMS(
                     GATEWAY_NUMBER,
                     JSON.stringify({ id, body }),
                   );
@@ -628,26 +628,46 @@ function ActivityPage() {
 }
 /* ------------------ Settings Page ------------------ */
 function SettingsPage() {
-  const { language, setLanguage, listenSms, setListenSms, listenNotifications, setListenNotifications, canSendNotifications, setCanSendNotifications } =
+  const { language, setLanguage, listenSms, setListenSms, listenNotifications, setListenNotifications, canSendNotifications, setCanSendNotifications, canDisplayOverApps, setCanDisplayOverApps } =
     useSettings();
   const t = APP_DICTIONARY[language];
 
   const [langOpen, setLangOpen] = useState(false);
 
-  async function requestSmsPermissions() {
-    if (Platform.OS !== 'android') {
-      setListenSms(true);
-      return;
-    }
-    const result = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.RECEIVE_SMS,
-    );
-    const granted =
-      result === PermissionsAndroid.RESULTS.GRANTED;
-    setListenSms(granted);
-    if (!granted) showToast(t.permissions.needPermissions);
-    else showToast(t.ui.yes);
+async function requestSmsPermissions() {
+  if (Platform.OS !== 'android') {
+    setListenSms(true);
+    return;
   }
+
+  try {
+    const result = await PermissionsAndroid.requestMultiple([
+      PermissionsAndroid.PERMISSIONS.RECEIVE_SMS,
+      PermissionsAndroid.PERMISSIONS.SEND_SMS,
+    ]);
+
+    const receiveGranted =
+      result[PermissionsAndroid.PERMISSIONS.RECEIVE_SMS] ===
+      PermissionsAndroid.RESULTS.GRANTED;
+
+    const sendGranted =
+      result[PermissionsAndroid.PERMISSIONS.SEND_SMS] ===
+      PermissionsAndroid.RESULTS.GRANTED;
+
+    const allGranted = receiveGranted && sendGranted;
+
+    setListenSms(allGranted);
+
+    if (!allGranted) {
+      showToast(t.permissions.needPermissions);
+    } else {
+      showToast(t.ui.yes);
+    }
+  } catch (error) {
+    console.error('SMS permission request failed:', error);
+    showToast('Permission request failed');
+  }
+}
 
   async function requestPostNotification() {
     if (Platform.OS !== 'android') {
@@ -716,10 +736,36 @@ function SettingsPage() {
                 if (granted) {
                   setListenNotifications(true);
                   NotificationListenerModule?.startListening();
-                  showToast('Notification Listener Enabled');
+                  showToast("❤️❤️");
                 } else {
                   setListenNotifications(false);
-                  showToast('Permission still not granted');
+                  showToast('😒😒');
+                }
+              }
+            };
+
+            const subscription = AppState.addEventListener('change', handleAppStateChange);
+          }}
+        />
+
+          <PermissionStatus
+          title={'Can display'}
+          subtitle={canDisplayOverApps ? '' : t.permissions.needPermissions}
+          granted={canDisplayOverApps}
+          onRequest={async () => {
+            await OverlayPermissionModule?.requestPermission();
+
+            const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+              if (nextAppState === 'active') {
+                subscription.remove();
+
+                const granted = await OverlayPermissionModule?.isPermissionGranted();
+                if (granted) {
+                  setCanDisplayOverApps(true);
+                  showToast("❤️❤️");
+                } else {
+                  setCanDisplayOverApps(false);
+                  showToast('😒😒');
                 }
               }
             };

@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { useSettings } from '../contexts';
-import { APP_DICTIONARY } from '../constants';
+import { APP_DICTIONARY } from '../dictionary';
 
 type Props = {
   title: string;

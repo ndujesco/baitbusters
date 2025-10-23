@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { PermissionsAndroid, Platform, NativeModules, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { APP_DICTIONARY, type LangKey } from './constants';
+import { APP_DICTIONARY, type LangKey } from './dictionary';
 
 type SettingsState = {
   language: LangKey;

@@ -1,5 +1,5 @@
 // App.tsx
-import React, {  useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
 
   FlatList,
@@ -18,6 +18,7 @@ import { APP_DICTIONARY } from './App/dictionary';
 import ActivityPage from './App/ActivityPage';
 import SettingsPage from './App/SettingsPage';
 import { SCREEN_WIDTH } from './App/const';
+import SubscriptionPage from './App/SubscriptionPage';
 
 export default function App() {
   return (
@@ -65,10 +66,23 @@ function MainAppInner() {
         >
           <Text style={[styles.tabText, activeIndex === 1 && styles.tabTextActive]}>{t.tabs.settings}</Text>
         </Pressable>
+
+        <Pressable
+          onPress={() => {
+            setActiveIndex(2);
+            pagerRef.current?.scrollToIndex({ index: 2, animated: true });
+          }}
+          style={[styles.tab, activeIndex === 2 && styles.tabActive]}
+        >
+          <Text style={[styles.tabText, activeIndex === 2 && styles.tabTextActive]}>
+            Subscription
+          </Text>
+        </Pressable>
+
       </View>
 
       <FlatList
-        data={[{ key: 'activity' }, { key: 'settings' }]}
+        data={[{ key: 'activity' }, { key: 'settings' }, { key: 'subscriptions' }]}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
@@ -79,7 +93,14 @@ function MainAppInner() {
         }}
         renderItem={({ item }) => (
           <View style={{ width: SCREEN_WIDTH }}>
-            {item.key === 'activity' ? <ActivityPage /> : <SettingsPage />}
+            {item.key === "activity" ? (
+              <ActivityPage />
+            ) : item.key === "settings" ? (
+              <SettingsPage />
+            ) : (
+              <SubscriptionPage />
+
+            )}
           </View>
         )}
         keyExtractor={(i) => i.key}
@@ -92,8 +113,7 @@ function MainApp() {
 }
 
 
-// (unchanged — kept your original styles)
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   header: { padding: 20, paddingTop: 12 },
   title: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
@@ -120,401 +140,4 @@ export const styles = StyleSheet.create({
   },
   tabText: { color: '#334155', fontWeight: '700' },
   tabTextActive: { color: '#fff' },
-
-  centerCard: {
-    marginHorizontal: 16,
-    backgroundColor: '#fbfbff',
-    borderRadius: 14,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#eef2f6',
-  },
-
-  verticalStatusList: {
-    marginTop: 10,
-    gap: 8,
-  },
-  verticalStatusItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-    shadowColor: '#000',
-    shadowOpacity: 0.02,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  statusItemLabel: {
-    color: '#0f172a',
-    fontWeight: '600',
-  },
-  statusItemValue: {
-    fontWeight: '700',
-  },
-
-  statusLabel: { color: '#64748b', fontSize: 12 },
-
-  controls: { flexDirection: 'row', marginTop: 12, alignItems: 'center', flexWrap: 'wrap' },
-  button: {
-    backgroundColor: '#16a34a',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    marginRight: 10,
-    minWidth: 140,
-    alignItems: 'center',
-  },
-  buttonText: { color: '#fff', fontWeight: '600' },
-  ghostButton: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    minWidth: 110,
-    marginTop: 8,
-  },
-  ghostText: { color: '#333' },
-
-  logList: { flex: 1, paddingHorizontal: 16, marginTop: 8 },
-  logCount: { backgroundColor: '#fff5f5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  logCountText: { color: '#dc2626', fontWeight: '700' },
-
-  empty: { padding: 16, alignItems: 'center' },
-
-  logHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  logFrom: { fontWeight: '700' },
-  logBody: { color: '#222', marginBottom: 8 },
-  logFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  statusPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
-  statusPillText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-  replyText: { color: '#666', marginLeft: 8 },
-
-  sendingBadge: {
-    position: 'absolute',
-    right: 18,
-    bottom: 24,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#16a34a',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-
-  deleteButton: {
-    backgroundColor: '#dc2626',
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    width: 80,
-    // Match logCard's border radius and margin
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  deleteButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-    paddingRight: 18,
-  },
-
-
-
-  languageButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginRight: 10,
-  },
-  languageButtonActive: {
-    backgroundColor: '#16a34a',
-    borderColor: '#15803d',
-  },
-  languageButtonText: { color: '#374151', fontWeight: '700' },
-  languageButtonTextActive: { color: '#fff' },
-
-  toggleButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  toggleOn: { backgroundColor: '#16a34a' },
-  toggleOff: { backgroundColor: '#ef4444' },
-
-  settingsPage: {
-    flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingTop: 18,
-  },
-  settingsTopSpace: {
-    height: 6,
-  },
-  section: {
-    marginTop: 6,
-  },
-  sectionWithSpace: {
-    marginBottom: 60,
-  },
-  sectionLabel: {
-    fontWeight: '700',
-    fontSize: 15,
-    color: '#0f172a',
-    marginBottom: 8,
-  },
-  hintText: {
-    color: '#64748b',
-    marginTop: 8,
-    fontSize: 12,
-  },
-
-  pickerWrapper: {
-    zIndex: 1000,
-  },
-  pickerBox: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e6edf3',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  pickerText: { color: '#0f172a', fontWeight: '600' },
-  caret: { color: '#64748b', marginLeft: 8 },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(8,12,20,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  modalCentered: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 520,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: '#eef2f6',
-  },
-  modalTitle: {
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 6,
-    fontSize: 16,
-  },
-  modalItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  modalItemText: {
-    color: '#0f172a',
-    fontWeight: '600',
-  },
-  modalItemTextActive: {
-    color: '#16a34a',
-    fontWeight: '800',
-  },
-  statusHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingBottom: 8,
-  },
-  statusHint: {
-    color: '#64748b',
-    fontSize: 12,
-    marginTop: 6,
-    maxWidth: '86%',
-  },
-  statusItems: {
-    marginTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#eef2f6',
-    paddingTop: 10,
-  },
-  reportButton: {
-    backgroundColor: '#ffffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  reportButtonText: {
-    color: '#8c1212ff',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f5f7fa',
-  },
-  rowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  indicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 6,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-  },
-  indicatorOn: { backgroundColor: '#16a34a' },
-  indicatorOff: { backgroundColor: '#ef4444' },
-  statusRowLabel: {
-    color: '#0f172a',
-    fontWeight: '600',
-  },
-  badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    minWidth: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeOn: {
-    backgroundColor: '#ecfdf5',
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-  },
-  badgeOff: {
-    backgroundColor: '#fff1f2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-  },
-  badgeText: {
-    fontWeight: '700',
-    fontSize: 13,
-  },
-
-  hiddenButtonContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    // Match logCard's margin and border radius
-    marginBottom: 10,
-    borderRadius: 12,
-    overflow: 'hidden', // Clip the button to the border radius
-  },
-  hiddenButton: {
-    backgroundColor: '#dc2626',
-    width: 80,
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  hiddenButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-
-  // --- STYLES to REMOVE ---
-  /*
-  deleteButton: { ... },
-  deleteButtonText: { ... },
-  */
-
-  // --- MODIFIED STYLES ---
-  logCard: {
-    backgroundColor: '#fff', // This is CRITICAL - ensures it hides the hidden item
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#f3f6f8',
-  },
-  logHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-    gap: 12,
-  },
-  logTitle: {
-    fontWeight: '700',
-    fontSize: 16,
-    color: '#0f172a',
-  },
-  logTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    flexShrink: 1,
-  },
-  logSubtitle: {
-    color: '#6b7280',
-    fontStyle: 'italic',
-    fontSize: 12,
-    paddingBottom: 1,
-    marginLeft: 4,
-  },
-  logHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  clearButton: {
-    backgroundColor: '#fff5f5',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  clearButtonText: {
-    color: '#ae3030ff',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-
-  badgeTextOn: { color: '#065f46' },
-  badgeTextOff: { color: '#7f1d1d' },
-  dropdownList: {},
-  dropdownItem: {},
-  dropdownItemText: {},
-  dropdownItemTextActive: {},
 });

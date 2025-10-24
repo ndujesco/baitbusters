@@ -10,13 +10,13 @@ import {
     View,
     AppStateStatus,
     AppState,
-
+StyleSheet
 } from 'react-native';
 
 import { useSettings } from './contexts';
 import { APP_DICTIONARY } from './dictionary';
 import PermissionStatus from './components/PermissionStatus';
-import { styles } from '../App';
+// import { styles } from '../App';
 import { showToast } from './const';
 
 const { NotificationListenerModule, OverlayPermissionModule } =
@@ -202,3 +202,102 @@ export default function SettingsPage() {
         </View>
     );
 }
+
+
+const styles = StyleSheet.create({
+
+      settingsPage: {
+        flex: 1,
+        backgroundColor: '#fff',
+        paddingHorizontal: 16,
+        paddingTop: 18,
+      },
+      settingsTopSpace: {
+        height: 6,
+      },
+      section: {
+        marginTop: 6,
+      },
+      sectionWithSpace: {
+        marginBottom: 60,
+      },
+      sectionLabel: {
+        fontWeight: '700',
+        fontSize: 15,
+        color: '#0f172a',
+        marginBottom: 8,
+      },
+      hintText: {
+        color: '#64748b',
+        marginTop: 8,
+        fontSize: 12,
+      },
+
+      pickerWrapper: {
+        zIndex: 1000,
+      },
+      pickerBox: {
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#e6edf3',
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        borderRadius: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.03,
+        shadowRadius: 6,
+        elevation: 1,
+      },
+      pickerText: { color: '#0f172a', fontWeight: '600' },
+      caret: { color: '#64748b', marginLeft: 8 },
+
+      modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(8,12,20,0.45)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+      },
+      modalCentered: {
+        width: '100%',
+        alignItems: 'center',
+      },
+      modalCard: {
+        width: '100%',
+        maxWidth: 520,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 16,
+        shadowColor: '#000',
+        shadowOpacity: 0.12,
+        shadowRadius: 18,
+        elevation: 6,
+        borderWidth: 1,
+        borderColor: '#eef2f6',
+      },
+      modalTitle: {
+        fontWeight: '700',
+        color: '#0f172a',
+        marginBottom: 6,
+        fontSize: 16,
+      },
+      modalItem: {
+        paddingVertical: 12,
+        paddingHorizontal: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+      },
+      modalItemText: {
+        color: '#0f172a',
+        fontWeight: '600',
+      },
+      modalItemTextActive: {
+        color: '#16a34a',
+        fontWeight: '800',
+      }
+
+});
+

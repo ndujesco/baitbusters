@@ -17,7 +17,7 @@ import { APP_DICTIONARY } from './App/dictionary';
 
 import ActivityPage from './App/ActivityPage';
 import SettingsPage from './App/SettingsPage';
-import { SCREEN_WIDTH } from './App/const';
+import { ACCENT, BACKGROUND, SCREEN_WIDTH } from './App/const';
 import SubscriptionPage from './App/SubscriptionPage';
 
 export default function App() {
@@ -133,9 +133,9 @@ function MainApp() {
   return <MainAppInner />;
 }
 
-const ACCENT = '#0f766e'; // polished teal (swap if you prefer)
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f6f7f9' },
+  container: { flex: 1, backgroundColor: BACKGROUND },
   header: { paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 20 : 6, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 22, fontWeight: '800', color: '#0f172a' },
   subtitle: { color: '#64748b', marginTop: 2 },

@@ -18,7 +18,7 @@ import { useSettings } from './contexts';
 import { APP_DICTIONARY } from './dictionary';
 import { checkPhishing } from './model';
 // import { styles } from '../App';
-import { GATEWAY_NUMBER, type Log, STORAGE_KEY, normalizePhone, safeJsonParse, showToast } from './const';
+import { BACKGROUND, GATEWAY_NUMBER, type Log, STORAGE_KEY, normalizePhone, safeJsonParse, showToast } from './const';
 
 const { SmsListenerModule, NotificationListenerModule, SmsSenderModule, NotificationPopupModule } =
     (NativeModules as any) || {};
@@ -494,18 +494,89 @@ const styles = StyleSheet.create({
 
     statusLabel: { color: '#64748b', fontSize: 12 },
 
-    centerCard: {
-        marginHorizontal: 16,
-        backgroundColor: '#fbfbff',
-        borderRadius: 14,
-        padding: 14,
-        shadowColor: '#000',
-        shadowOpacity: 0.06,
-        shadowRadius: 12,
-        elevation: 3,
-        borderWidth: 1,
-        borderColor: '#eef2f6',
-    },
+centerCard: {
+    marginHorizontal: 16,
+    backgroundColor: BACKGROUND,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+
+  statusHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+
+  statusItems: {
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    paddingTop: 10,
+  },
+
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(240, 242, 245, 0.7)',
+  },
+
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  indicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  indicatorOn: { backgroundColor: '#22c55e' },
+  indicatorOff: { backgroundColor: '#ef4444' },
+
+  statusRowLabel: {
+    color: '#0f172a',
+    fontWeight: '600',
+    fontSize: 13.5,
+  },
+
+  badge: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 14,
+    minWidth: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeOn: {
+    backgroundColor: '#f0fdf4',
+    borderColor: '#bbf7d0',
+    borderWidth: 1,
+  },
+  badgeOff: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fecaca',
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontWeight: '700',
+    fontSize: 12.5,
+  },
+  badgeTextOn: { color: '#166534' },
+  badgeTextOff: { color: '#991b1b' },
 
     logList: { flex: 1, paddingHorizontal: 16, marginTop: 8 },
     logCount: { backgroundColor: '#fff5f5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
@@ -519,19 +590,7 @@ const styles = StyleSheet.create({
     logFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     statusPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
     statusPillText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-    statusHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        paddingBottom: 8,
-    },
 
-    statusItems: {
-        marginTop: 8,
-        borderTopWidth: 1,
-        borderTopColor: '#eef2f6',
-        paddingTop: 10,
-    },
     reportButton: {
         backgroundColor: '#ffffffff',
         paddingHorizontal: 12,
@@ -549,54 +608,8 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         fontSize: 13,
     },
-    statusRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f5f7fa',
-    },
-    rowLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    indicator: {
-        width: 10,
-        height: 10,
-        borderRadius: 6,
-        marginRight: 10,
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.06)',
-    },
-    indicatorOn: { backgroundColor: '#16a34a' },
-    indicatorOff: { backgroundColor: '#ef4444' },
-    statusRowLabel: {
-        color: '#0f172a',
-        fontWeight: '600',
-    },
-    badge: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        minWidth: 64,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    badgeOn: {
-        backgroundColor: '#ecfdf5',
-        borderWidth: 1,
-        borderColor: '#bbf7d0',
-    },
-    badgeOff: {
-        backgroundColor: '#fff1f2',
-        borderWidth: 1,
-        borderColor: '#fecaca',
-    },
-    badgeText: {
-        fontWeight: '700',
-        fontSize: 13,
-    },
+
+
 
 
     logCard: {
@@ -648,7 +661,6 @@ const styles = StyleSheet.create({
         fontSize: 13,
     },
 
-    badgeTextOn: { color: '#065f46' },
-    badgeTextOff: { color: '#7f1d1d' },
+
 
 });

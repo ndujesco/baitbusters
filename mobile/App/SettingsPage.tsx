@@ -16,7 +16,7 @@ import { useSettings } from './contexts';
 import { APP_DICTIONARY } from './dictionary';
 import PermissionStatus from './components/PermissionStatus';
 // import { styles } from '../App';
-import { showToast } from './const';
+import { BACKGROUND, showToast } from './const';
 
 const { NotificationListenerModule, OverlayPermissionModule } =
     (NativeModules as any) || {};
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
 
       settingsPage: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: BACKGROUND,
         paddingHorizontal: 16,
         paddingTop: 18,
       },

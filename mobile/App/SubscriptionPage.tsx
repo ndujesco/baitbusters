@@ -9,6 +9,7 @@ import {
   Switch,
   ActivityIndicator,
 } from "react-native";
+import { ACCENT, BACKGROUND } from "./const";
 
 const plans = [
 
@@ -123,7 +124,7 @@ export default function SubscriptionPage() {
                     <Switch
                       value={autoRenew}
                       onValueChange={setAutoRenew}
-                      thumbColor={autoRenew ? "#16a34a" : "#ccc"}
+                      thumbColor={autoRenew ? ACCENT : "#ccc"}
                     />
                   </View>
                 </View>
@@ -138,7 +139,7 @@ export default function SubscriptionPage() {
                 disabled={loadingPlanId === plan.id}
               >
                 {loadingPlanId === plan.id ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={BACKGROUND} />
                 ) : (
                   <Text style={styles.subscribeText}>Subscribe</Text>
                 )}
@@ -249,7 +250,7 @@ export default function SubscriptionPage() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: "#fff" },
+  container: { padding: 16, backgroundColor: BACKGROUND },
   title: { fontSize: 20, fontWeight: "700", color: "#0f172a" },
   subtitle: { color: "#475569", marginTop: 6, marginBottom: 18 },
   planCard: {
@@ -269,7 +270,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   planName: { fontWeight: "700", fontSize: 16, color: "#0f172a" },
-  planPrice: { fontWeight: "700", color: "#16a34a" },
+  planPrice: { fontWeight: "700", color: ACCENT },
   planDesc: { color: "#64748b", marginTop: 6 },
   statsRow: {
     flexDirection: "row",
@@ -279,19 +280,19 @@ const styles = StyleSheet.create({
   stat: { color: "#0f172a", fontWeight: "600" },
   subscribeButton: {
     marginTop: 14,
-    backgroundColor: "#16a34a",
+    backgroundColor:ACCENT,
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: "center",
   },
-  subscribeText: { color: "#fff", fontWeight: "700" },
+  subscribeText: { color: BACKGROUND, fontWeight: "700" },
   subscribedRow: {
     marginTop: 14,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  subscribedText: { color: "#16a34a", fontWeight: "700" },
+  subscribedText: { color: ACCENT, fontWeight: "700" },
   switchRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   autoRenewText: { color: "#0f172a", fontWeight: "600", marginRight: 4 },
   modalOverlay: {
@@ -302,7 +303,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   modalCard: {
-    backgroundColor: "#fff",
+    backgroundColor: BACKGROUND,
     width: "100%",
     maxWidth: 400,
     borderRadius: 12,
@@ -335,21 +336,21 @@ const styles = StyleSheet.create({
   cancelText: { color: "#64748b", fontWeight: "700" },
   confirmButton: {
     flex: 1,
-    backgroundColor: "#16a34a",
+    backgroundColor: ACCENT,
     paddingVertical: 10,
     borderRadius: 8,
     marginLeft: 6,
     alignItems: "center",
   },
-  confirmText: { color: "#fff", fontWeight: "700" },
+  confirmText: { color: BACKGROUND, fontWeight: "700" },
   successEmoji: { fontSize: 42, marginBottom: 6 },
   errorEmoji: { fontSize: 42, marginBottom: 6 },
   doneButton: {
     marginTop: 16,
-    backgroundColor: "#16a34a",
+    backgroundColor: ACCENT,
     paddingVertical: 10,
     borderRadius: 8,
     paddingHorizontal: 20,
   },
-  doneText: { color: "#fff", fontWeight: "700" },
+  doneText: { color: BACKGROUND, fontWeight: "700" },
 });

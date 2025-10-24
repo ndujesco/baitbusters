@@ -166,7 +166,7 @@ export default function ActivityPage() {
                         NotificationPopupModule?.showOverlayPopup?.(
                             `${t.activity.spamDetected}`,
                             `${t.general.from}: ${foundLog.from} — "${foundLog.body}"`,
-                            "CLOSE"
+                            t.ui.close.toLocaleUpperCase()
                         );
 
                     } catch { }

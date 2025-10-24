@@ -41,7 +41,6 @@ export default function PermissionStatus({ title, granted, onRequest, subtitle }
     outputRange: ['rgba(239, 68, 68, 0.12)', 'rgba(22, 183, 129, 0.12)'],
   });
 
-  const accessibilityState = { checked: granted };
 
   return (
     <View style={styles.container}>
@@ -55,7 +54,6 @@ export default function PermissionStatus({ title, granted, onRequest, subtitle }
         android_ripple={{ color: 'rgba(0,0,0,0.06)', borderless: true }}
         accessibilityRole={'switch' as AccessibilityRole}
         accessibilityLabel={title}
-        accessibilityState={accessibilityState}
         style={({ pressed }) => [
           styles.toggleWrapper,
           pressed && Platform.OS === 'ios' ? { opacity: 0.7 } : {},

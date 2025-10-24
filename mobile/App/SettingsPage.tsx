@@ -16,7 +16,7 @@ import { useSettings } from './contexts';
 import { APP_DICTIONARY } from './dictionary';
 import PermissionStatus from './components/PermissionStatus';
 // import { styles } from '../App';
-import { BACKGROUND, showToast } from './const';
+import { ACCENT, BACKGROUND, showToast } from './const';
 
 const { NotificationListenerModule, OverlayPermissionModule } =
     (NativeModules as any) || {};
@@ -291,11 +291,11 @@ const styles = StyleSheet.create({
         borderBottomColor: '#f1f5f9',
     },
     modalItemText: {
-        color: '#0f172a',
+        color: '#14203dff',
         fontWeight: '600',
     },
     modalItemTextActive: {
-        color: '#16a34a',
+        color: "#40978fff",
         fontWeight: '800',
     }
 

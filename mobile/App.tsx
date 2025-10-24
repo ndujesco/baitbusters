@@ -11,6 +11,9 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Activity, Settings, CreditCard } from "lucide-react-native";
+
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 import { SettingsProvider, useSettings } from './App/contexts';
 import { APP_DICTIONARY } from './App/dictionary';
@@ -64,31 +67,40 @@ function MainAppInner() {
         </View>
       </View>
 
-      <View style={styles.tabRow}>
-        {[
-          { key: 'activity', label: t.tabs.activity },
-          { key: 'settings', label: t.tabs.settings },
-          { key: 'subscriptions', label: 'Subscription' },
-        ].map((tab, idx) => {
-          const active = activeIndex === idx;
-          return (
-            <Pressable
-              key={tab.key}
-              onPress={() => {
-                pagerRef.current?.scrollToIndex({ index: idx, animated: true });
-                onChangeIndex(idx);
-              }}
-              style={({ pressed }) => [
-                styles.tab,
-                active && styles.tabActive,
-                pressed && { opacity: 0.9 },
-              ]}
-            >
-              <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+
+
+
+<View style={styles.tabRow}>
+  {[
+    { key: 'activity', icon: Activity },
+    { key: 'subscriptions', icon: CreditCard },
+    { key: 'settings', icon: Settings },
+  ].map((tab, idx) => {
+    const active = activeIndex === idx;
+    const Icon = tab.icon;
+    return (
+      <Pressable
+        key={tab.key}
+        onPress={() => {
+          pagerRef.current?.scrollToIndex({ index: idx, animated: true });
+          onChangeIndex(idx);
+        }}
+        style={({ pressed }) => [
+          styles.tab,
+          active && styles.tabActive,
+          pressed && { opacity: 0.9 },
+        ]}
+      >
+        <Icon
+          size={22}
+          color={active ? '#fff' : '#334155'}
+          strokeWidth={2.3}
+        />
+      </Pressable>
+    );
+  })}
+</View>
+
 
       {/* subtle underline indicator (animated) */}
       <View style={styles.indicatorWrap}>
@@ -110,7 +122,7 @@ function MainAppInner() {
       </View>
 
       <FlatList
-        data={[{ key: 'activity' }, { key: 'settings' }, { key: 'subscriptions' }]}
+        data={[{ key: 'activity' }, { key: 'subscriptions' }, { key: 'settings' }, ]}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
@@ -142,30 +154,31 @@ const styles = StyleSheet.create({
   rightHeader: { alignItems: 'flex-end' },
   smallLabel: { color: '#94a3b8', fontSize: 12 },
 
-  tabRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    gap: 8,
-    marginBottom: 6,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-  },
-  tab: {
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#eef2f6',
-    marginRight: 8,
-    minWidth: 92,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabActive: {
-    backgroundColor: ACCENT,
-    borderColor: ACCENT,
-  },
+tabRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-around',
+  alignItems: 'center',
+  marginBottom: 8,
+  paddingHorizontal: 20,
+},
+
+tab: {
+  padding: 10,
+  borderRadius: 14,
+  backgroundColor: '#fff',
+  borderWidth: 1,
+  borderColor: '#eef2f6',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 56,
+  height: 48,
+},
+
+tabActive: {
+  backgroundColor: ACCENT,
+  borderColor: ACCENT,
+},
+
   tabText: { color: '#334155', fontWeight: '700' },
   tabTextActive: { color: '#fff' },
 

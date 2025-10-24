@@ -39,5 +39,5 @@ export const showToast = (msg: string) => {
 export const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export const ACCENT = '#0f766e'; // polished teal (swap if you prefer)
-export const SUBSCRIPTION_ACCENT = '#17655eff'; // polished blue
+export const SUBSCRIPTION_ACCENT = '#2c8f87ff'; // polished blue
 export const BACKGROUND = '#F8FAFC'

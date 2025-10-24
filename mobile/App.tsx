@@ -1,14 +1,14 @@
 // App.tsx
 import React, { useRef, useState } from 'react';
 import {
-
   FlatList,
   Pressable,
   StatusBar,
   StyleSheet,
   Text,
   View,
-
+  Platform,
+  Animated,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -38,47 +38,75 @@ function MainAppInner() {
   const pagerRef = useRef<FlatList<any> | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
+  // small animated underline for the active tab
+  const indicator = useRef(new Animated.Value(0)).current;
+  const onChangeIndex = (idx: number) => {
+    setActiveIndex(idx);
+    Animated.spring(indicator, {
+      toValue: idx,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 6,
+    }).start();
+  };
+
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View style={styles.header}>
-        <Text style={styles.title}>{t.app.title}</Text>
-        <Text style={styles.subtitle}>{t.app.subtitle}</Text>
+        <View>
+          <Text style={styles.title}>{t.app.title}</Text>
+          <Text style={styles.subtitle}>{t.app.subtitle}</Text>
+        </View>
+
+        <View style={styles.rightHeader}>
+          <Text style={styles.smallLabel}>v1.0</Text>
+        </View>
       </View>
 
       <View style={styles.tabRow}>
-        <Pressable
-          onPress={() => {
-            setActiveIndex(0);
-            pagerRef.current?.scrollToIndex({ index: 0, animated: true });
-          }}
-          style={[styles.tab, activeIndex === 0 && styles.tabActive]}
-        >
-          <Text style={[styles.tabText, activeIndex === 0 && styles.tabTextActive]}>{t.tabs.activity}</Text>
-        </Pressable>
+        {[
+          { key: 'activity', label: t.tabs.activity },
+          { key: 'settings', label: t.tabs.settings },
+          { key: 'subscriptions', label: 'Subscription' },
+        ].map((tab, idx) => {
+          const active = activeIndex === idx;
+          return (
+            <Pressable
+              key={tab.key}
+              onPress={() => {
+                pagerRef.current?.scrollToIndex({ index: idx, animated: true });
+                onChangeIndex(idx);
+              }}
+              style={({ pressed }) => [
+                styles.tab,
+                active && styles.tabActive,
+                pressed && { opacity: 0.9 },
+              ]}
+            >
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
-        <Pressable
-          onPress={() => {
-            setActiveIndex(1);
-            pagerRef.current?.scrollToIndex({ index: 1, animated: true });
-          }}
-          style={[styles.tab, activeIndex === 1 && styles.tabActive]}
-        >
-          <Text style={[styles.tabText, activeIndex === 1 && styles.tabTextActive]}>{t.tabs.settings}</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => {
-            setActiveIndex(2);
-            pagerRef.current?.scrollToIndex({ index: 2, animated: true });
-          }}
-          style={[styles.tab, activeIndex === 2 && styles.tabActive]}
-        >
-          <Text style={[styles.tabText, activeIndex === 2 && styles.tabTextActive]}>
-            Subscription
-          </Text>
-        </Pressable>
-
+      {/* subtle underline indicator (animated) */}
+      <View style={styles.indicatorWrap}>
+        <Animated.View
+          style={[
+            styles.indicator,
+            {
+              transform: [
+                {
+                  translateX: indicator.interpolate({
+                    inputRange: [0, 1, 2],
+                    outputRange: [0, 112, 224], // roughly tab widths (tweak if you change tab padding)
+                  }),
+                },
+              ],
+            },
+          ]}
+        />
       </View>
 
       <FlatList
@@ -89,18 +117,11 @@ function MainAppInner() {
         ref={pagerRef}
         onMomentumScrollEnd={(ev) => {
           const index = Math.round(ev.nativeEvent.contentOffset.x / ev.nativeEvent.layoutMeasurement.width);
-          setActiveIndex(index);
+          onChangeIndex(index);
         }}
         renderItem={({ item }) => (
           <View style={{ width: SCREEN_WIDTH }}>
-            {item.key === "activity" ? (
-              <ActivityPage />
-            ) : item.key === "settings" ? (
-              <SettingsPage />
-            ) : (
-              <SubscriptionPage />
-
-            )}
+            {item.key === 'activity' ? <ActivityPage /> : item.key === 'settings' ? <SettingsPage /> : <SubscriptionPage />}
           </View>
         )}
         keyExtractor={(i) => i.key}
@@ -112,32 +133,52 @@ function MainApp() {
   return <MainAppInner />;
 }
 
-
+const ACCENT = '#0f766e'; // polished teal (swap if you prefer)
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  header: { padding: 20, paddingTop: 12 },
-  title: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
-  subtitle: { color: '#475569', marginTop: 4 },
+  container: { flex: 1, backgroundColor: '#f6f7f9' },
+  header: { paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 20 : 6, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  title: { fontSize: 22, fontWeight: '800', color: '#0f172a' },
+  subtitle: { color: '#64748b', marginTop: 2 },
+  rightHeader: { alignItems: 'flex-end' },
+  smallLabel: { color: '#94a3b8', fontSize: 12 },
 
   tabRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     gap: 8,
     marginBottom: 6,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
   },
   tab: {
     paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 12,
+    paddingHorizontal: 18,
+    borderRadius: 14,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e6edf3',
+    borderColor: '#eef2f6',
     marginRight: 8,
+    minWidth: 92,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tabActive: {
-    backgroundColor: '#68ea7bff',
-    borderColor: '#68ea7bff',
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
   },
   tabText: { color: '#334155', fontWeight: '700' },
   tabTextActive: { color: '#fff' },
+
+  indicatorWrap: { height: 6, marginHorizontal: 16, marginBottom: 12 },
+  indicator: {
+    width: 96,
+    height: 6,
+    borderRadius: 6,
+    backgroundColor: ACCENT,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
 });

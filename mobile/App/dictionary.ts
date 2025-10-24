@@ -72,7 +72,7 @@ export const APP_DICTIONARY: Record<
 > = {
   english: {
     app: {
-      title: 'BaitBusters',
+      title: 'Aegis',
       subtitle: 'Phishing interceptor.',
     },
     general: {
@@ -146,7 +146,7 @@ export const APP_DICTIONARY: Record<
   },
   french: {
     app: {
-      title: 'BaitBusters',
+      title: 'Aegis',
       subtitle: "Intercepteur d'hameçonnage.",
     },
     general: {
@@ -219,7 +219,7 @@ languageOptionsDisplay: [
   },
   hausa: {
     app: {
-      title: 'BaitBusters',
+      title: 'Aegis',
       subtitle: 'Mai Kama Saƙon Zamba.',
     },
     general: {
@@ -292,7 +292,7 @@ languageOptionsDisplay: [
   },
   yoruba: {
     app: {
-      title: 'BaitBusters',
+      title: 'Aegis',
       subtitle: 'Adakoja Ifiranṣẹ Ajeseku.',
     },
     general: {
@@ -366,7 +366,7 @@ languageOptionsDisplay: [
   },
   swahili: {
     app: {
-      title: 'BaitBusters',
+      title: 'Aegis',
       subtitle: 'Kizuia Ulaghai.',
     },
     general: {
@@ -440,7 +440,7 @@ languageOptionsDisplay: [
   },
   amharic: {
     app: {
-      title: 'BaitBusters',
+      title: 'Aegis',
       subtitle: 'የማስገር ጣልቃ ገብ።',
     },
     general: {
@@ -514,7 +514,7 @@ languageOptionsDisplay: [
   },
   igbo: {
     app: {
-      title: 'BaitBusters',
+      title: 'Aegis',
       subtitle: 'Onye Nchọta Ozi Ngbako.',
     },
     general: {

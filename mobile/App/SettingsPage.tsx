@@ -221,8 +221,8 @@ const styles = StyleSheet.create({
         marginBottom: 60,
       },
       sectionLabel: {
-        fontWeight: '700',
-        fontSize: 15,
+        fontWeight: '800',
+        fontSize: 18,
         color: '#0f172a',
         marginBottom: 8,
       },

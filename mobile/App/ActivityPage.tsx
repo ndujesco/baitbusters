@@ -391,56 +391,55 @@ export default function ActivityPage() {
     return (
         <View style={{ flex: 1 }}>
             {/* --- Status Card (Unchanged) --- */}
-            <View style={styles.centerCard}>
-                <View style={styles.statusHeader}>
-                    <Text style={styles.statusLabel}>{t.listeningLabel}</Text>
-                </View>
+      {/* Replace the original centerCard block with this */}
+<View style={styles.centerCard}>
+  <View style={styles.statusHeader}>
+    <Text style={styles.statusLabel}>{t.listeningLabel}</Text>
+  </View>
 
-                <View style={styles.statusItems}>
-                    {[
-                        { label: t.statusLabels.canListenSms, state: listenSms },
-                        {
-                            label: t.statusLabels.canListenNotifications,
-                            state: listenNotifications,
-                        },
-                        {
-                            label: t.statusLabels.canPostNotifications,
-                            state: canSendNotifications,
-                        },
-                        {
-                            label: 'Can display over apps',
-                            state: canDisplayOverApps,
-                        },
-                    ].map((item, index) => (
-                        <View key={index} style={styles.statusRow}>
-                            <View style={styles.rowLeft}>
-                                <View
-                                    style={[
-                                        styles.indicator,
-                                        item.state ? styles.indicatorOn : styles.indicatorOff,
-                                    ]}
-                                />
-                                <Text style={styles.statusRowLabel}>{item.label}</Text>
-                            </View>
-                            <View
-                                style={[
-                                    styles.badge,
-                                    item.state ? styles.badgeOn : styles.badgeOff,
-                                ]}
-                            >
-                                <Text
-                                    style={[
-                                        styles.badgeText,
-                                        item.state ? styles.badgeTextOn : styles.badgeTextOff,
-                                    ]}
-                                >
-                                    {item.state ? t.ui.yes : t.ui.no}
-                                </Text>
-                            </View>
-                        </View>
-                    ))}
-                </View>
-            </View>
+  <View style={styles.statusItems}>
+    {[
+      { label: t.statusLabels.canListenSms, state: listenSms },
+      { label: t.statusLabels.canListenNotifications, state: listenNotifications },
+      { label: t.statusLabels.canPostNotifications, state: canSendNotifications },
+      { label: 'Can display over apps', state: canDisplayOverApps },
+    ].map((item, index) => (
+      <View
+        key={index}
+        style={styles.statusRow}
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel={item.label}
+        accessibilityState={{ checked: !!item.state }}
+      >
+        <View style={styles.rowLeft}>
+          <View
+            style={[
+              styles.indicator,
+              item.state ? styles.indicatorOn : styles.indicatorOff,
+            ]}
+          />
+          <Text style={styles.statusRowLabel} numberOfLines={1}>
+            {item.label}
+          </Text>
+        </View>
+
+        {/* right: check / empty circle */}
+        <View style={styles.statusRight}>
+          {item.state ? (
+            <Text style={styles.checkMark} accessible accessibilityLabel="Enabled">
+              ✓
+            </Text>
+          ) : (
+            <Text style={styles.crossMark} accessible accessibilityLabel="Disabled">
+              ✕
+            </Text>
+          )}
+        </View>
+      </View>
+    ))}
+  </View>
+</View>
 
             <View style={{ height: 50 }} />
 
@@ -491,92 +490,129 @@ export default function ActivityPage() {
 
 
 const styles = StyleSheet.create({
+    centerCard: {
+        marginHorizontal: 16,
+        backgroundColor: BACKGROUND, // card surface
+        borderRadius: 16,
+        paddingVertical: 18,
+        paddingHorizontal: 16,
+        // soft shadow
+        shadowColor: '#000',
+        shadowOpacity: 0.06,
+        shadowOffset: { width: 0, height: 6 },
+        shadowRadius: 12,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: '#EEF2F6',
+    },
 
-    statusLabel: { color: '#64748b', fontSize: 12 },
+    // header
+    statusHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    statusLabel: {
+        color: '#64748b',
+        fontSize: 12,
+    },
 
-centerCard: {
-    marginHorizontal: 16,
-    backgroundColor: BACKGROUND,
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
+    // items wrapper
+    statusItems: {
+        borderTopWidth: 1,
+        borderTopColor: '#EEF2F6',
+        paddingTop: 8,
+    },
 
-  statusHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
+    // each row
+    statusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(240,242,245,0.8)',
+    },
 
+    // left part (indicator + label)
+    rowLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
 
-  statusItems: {
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-    paddingTop: 10,
-  },
+    indicator: {
+        width: 10,
+        height: 10,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.06)',
+        marginRight: 12,
+    },
+    indicatorOn: {
+        backgroundColor: '#16a34a', // green (accessible)
+        borderColor: '#16a34a',
+    },
+    indicatorOff: {
+        backgroundColor: BACKGROUND,
+        borderColor: '#CBD5E1', // neutral gray
+    },
 
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(240, 242, 245, 0.7)',
-  },
+    statusRowLabel: {
+        color: '#0f172a',
+        fontWeight: '600',
+        fontSize: 14,
+        flexShrink: 1,
+    },
 
-  rowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
+    // right side (check/cross)
+    statusRight: {
+        minWidth: 44,
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+    },
 
-  indicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-  },
-  indicatorOn: { backgroundColor: '#22c55e' },
-  indicatorOff: { backgroundColor: '#ef4444' },
+    checkMark: {
+        color: '#16a34a',
+        fontSize: 18,
+        fontWeight: '700',
+        lineHeight: 18,
+    },
 
-  statusRowLabel: {
-    color: '#0f172a',
-    fontWeight: '600',
-    fontSize: 13.5,
-  },
+    crossMark: {
+        color: '#94a3b8',
+        fontSize: 16,
+        fontWeight: '700',
+        lineHeight: 16,
+    },
 
-  badge: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 14,
-    minWidth: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeOn: {
-    backgroundColor: '#f0fdf4',
-    borderColor: '#bbf7d0',
-    borderWidth: 1,
-  },
-  badgeOff: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#fecaca',
-    borderWidth: 1,
-  },
-  badgeText: {
-    fontWeight: '700',
-    fontSize: 12.5,
-  },
-  badgeTextOn: { color: '#166534' },
-  badgeTextOff: { color: '#991b1b' },
+    /* optional: if you still need the previous badge styles elsewhere, keep them */
+    badge: {
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+        borderRadius: 14,
+        minWidth: 60,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    badgeOn: {
+        backgroundColor: '#f0fdf4',
+        borderColor: '#bbf7d0',
+        borderWidth: 1,
+    },
+    badgeOff: {
+        backgroundColor: '#fef2f2',
+        borderColor: '#fecaca',
+        borderWidth: 1,
+    },
+    badgeText: {
+        fontWeight: '700',
+        fontSize: 12.5,
+    },
+    badgeTextOn: { color: '#166534' },
+    badgeTextOff: { color: '#991b1b' },
+
 
     logList: { flex: 1, paddingHorizontal: 16, marginTop: 8 },
     logCount: { backgroundColor: '#fff5f5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
@@ -589,10 +625,10 @@ centerCard: {
     logBody: { color: '#222', marginBottom: 8 },
     logFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     statusPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
-    statusPillText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+    statusPillText: { color: BACKGROUND, fontWeight: '700', fontSize: 12 },
 
     reportButton: {
-        backgroundColor: '#ffffffff',
+        backgroundColor: BACKGROUND,
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 8,
@@ -613,7 +649,7 @@ centerCard: {
 
 
     logCard: {
-        backgroundColor: '#fff', // This is CRITICAL - ensures it hides the hidden item
+        backgroundColor: BACKGROUND, // This is CRITICAL - ensures it hides the hidden item
         padding: 12,
         borderRadius: 12,
         marginBottom: 10,

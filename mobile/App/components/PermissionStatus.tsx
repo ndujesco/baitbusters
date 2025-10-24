@@ -38,7 +38,7 @@ export default function PermissionStatus({ title, granted, onRequest, subtitle }
 
   const trackBg = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(239, 68, 68, 0.12)', 'rgba(22, 183, 129, 0.12)'],
+    outputRange: ['#a1a1a1ff', '#2c8f87ff'],
   });
 
 

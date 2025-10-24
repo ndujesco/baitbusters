@@ -9,7 +9,7 @@ import {
     View,
     AppStateStatus,
     AppState,
-StyleSheet
+    StyleSheet
 } from 'react-native';
 
 import { useSettings } from './contexts';
@@ -56,11 +56,11 @@ export default function SettingsPage() {
             if (!allGranted) {
                 showToast(t.permissions.needPermissions);
             } else {
-                showToast(t.ui.yes);
+                showToast(t.ui.permissionGrantedFeedback);
             }
         } catch (error) {
             console.error('SMS permission request failed:', error);
-            showToast('Permission request failed');
+            showToast(t.errors.permissionRequestFailed);
         }
     }
 
@@ -81,7 +81,8 @@ export default function SettingsPage() {
     const selectLanguage = (key: string) => {
         setLanguage(key as any);
         setLangOpen(false);
-        showToast(`Language set to ${key}`);
+        showToast(t.settings.languageSetMessage(key));
+
     };
 
     return (
@@ -131,10 +132,10 @@ export default function SettingsPage() {
                                 if (granted) {
                                     setListenNotifications(true);
                                     NotificationListenerModule?.startListening();
-                                    showToast("❤️❤️");
+                                    showToast(t.ui.permissionGrantedFeedback);
                                 } else {
                                     setListenNotifications(false);
-                                    showToast('😒😒');
+                                    showToast(t.ui.permissionDeniedFeedback);
                                 }
                             }
                         };
@@ -157,10 +158,10 @@ export default function SettingsPage() {
                                 const granted = await OverlayPermissionModule?.isPermissionGranted();
                                 if (granted) {
                                     setCanDisplayOverApps(true);
-                                    showToast("❤️❤️");
+                                    showToast(t.ui.permissionGrantedFeedback);
                                 } else {
                                     setCanDisplayOverApps(false);
-                                    showToast('😒😒');
+                                    showToast(t.ui.permissionDeniedFeedback);
                                 }
                             }
                         };
@@ -205,37 +206,37 @@ export default function SettingsPage() {
 
 const styles = StyleSheet.create({
 
-      settingsPage: {
+    settingsPage: {
         flex: 1,
         backgroundColor: BACKGROUND,
         paddingHorizontal: 16,
         paddingTop: 18,
-      },
-      settingsTopSpace: {
+    },
+    settingsTopSpace: {
         height: 6,
-      },
-      section: {
+    },
+    section: {
         marginTop: 6,
-      },
-      sectionWithSpace: {
+    },
+    sectionWithSpace: {
         marginBottom: 60,
-      },
-      sectionLabel: {
+    },
+    sectionLabel: {
         fontWeight: '800',
         fontSize: 18,
         color: '#0f172a',
         marginBottom: 8,
-      },
-      hintText: {
+    },
+    hintText: {
         color: '#64748b',
         marginTop: 8,
         fontSize: 12,
-      },
+    },
 
-      pickerWrapper: {
+    pickerWrapper: {
         zIndex: 1000,
-      },
-      pickerBox: {
+    },
+    pickerBox: {
         backgroundColor: '#fff',
         borderWidth: 1,
         borderColor: '#e6edf3',
@@ -249,22 +250,22 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.03,
         shadowRadius: 6,
         elevation: 1,
-      },
-      pickerText: { color: '#0f172a', fontWeight: '600' },
-      caret: { color: '#64748b', marginLeft: 8 },
+    },
+    pickerText: { color: '#0f172a', fontWeight: '600' },
+    caret: { color: '#64748b', marginLeft: 8 },
 
-      modalOverlay: {
+    modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(8,12,20,0.45)',
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 24,
-      },
-      modalCentered: {
+    },
+    modalCentered: {
         width: '100%',
         alignItems: 'center',
-      },
-      modalCard: {
+    },
+    modalCard: {
         width: '100%',
         maxWidth: 520,
         backgroundColor: '#fff',
@@ -276,27 +277,27 @@ const styles = StyleSheet.create({
         elevation: 6,
         borderWidth: 1,
         borderColor: '#eef2f6',
-      },
-      modalTitle: {
+    },
+    modalTitle: {
         fontWeight: '700',
         color: '#0f172a',
         marginBottom: 6,
         fontSize: 16,
-      },
-      modalItem: {
+    },
+    modalItem: {
         paddingVertical: 12,
         paddingHorizontal: 10,
         borderBottomWidth: 1,
         borderBottomColor: '#f1f5f9',
-      },
-      modalItemText: {
+    },
+    modalItemText: {
         color: '#0f172a',
         fontWeight: '600',
-      },
-      modalItemTextActive: {
+    },
+    modalItemTextActive: {
         color: '#16a34a',
         fontWeight: '800',
-      }
+    }
 
 });
 

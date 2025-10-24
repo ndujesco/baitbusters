@@ -12,21 +12,26 @@ export const APP_DICTIONARY: Record<
     listeningLabel: string;
     somethingCount: (count: number) => string;
     languageOptionsDisplay: { key: LangKey; label: string }[];
-    tabs: { activity: string; settings: string };
+    tabs: { activity: string; settings: string; subscriptions: string };
     ui: {
       yes: string;
       no: string;
       report: string;
       unknown: string;
+      close: string;
+      permissionGrantedFeedback: string;
+      permissionDeniedFeedback: string;
     };
     statusLabels: {
       canListenSms: string;
       canListenNotifications: string;
       canPostNotifications: string;
+      canDisplayOverApps: string;
     };
     permissions: {
       title: string;
       smsTitle: string;
+      overLayTitle: string;
       notificationsTitle: string;
       postNotificationsTitle: string;
       needPermissions: string;
@@ -41,6 +46,37 @@ export const APP_DICTIONARY: Record<
       logsCleared: string;
       deleted: string,
     };
+    subscriptions: {
+      title: string;
+  subtitle: string;
+  subscribed: string;
+  autoRenew: string;
+  subscribeButton: string;
+  confirmTitle: string;
+  confirmMessage: (price: number, name: string) => string;
+  cancel: string;
+  confirm: string;
+  successTitle: string;
+  successMessage: (name: string) => string;
+  done: string;
+  errorTitle: string;
+  errorMessage: (balance: number) => string;
+  ok: string;
+  renewalTitle: string;
+  renewalMessage: (name: string, date: string) => string;
+  close: string;
+  messagesLabel: string;
+  detectionsLabel: string;
+  plans: {
+    standardName: string;
+    premiumName: string;
+    enterpriseName: string;
+
+    standardDesc: string;
+    premiumDesc: string;
+    enterpriseDesc: string;
+  };
+    }
     activity: {
       logTitle: string;
       noMessages: string;
@@ -58,12 +94,14 @@ export const APP_DICTIONARY: Record<
       invalidMessageBody: string;
       invalidMessageStructure: string;
       messageIdNotFound: string;
+      permissionRequestFailed: string;
     };
     settings: {
       title: string;
       languageLabel: string;
       persistNotice: string;
       spamFilterLabel: string;
+      languageSetMessage: (langLabel: string) => string;
     };
     general: {
       from: string,
@@ -78,6 +116,40 @@ export const APP_DICTIONARY: Record<
     general: {
       from: 'From',
     },
+    subscriptions: {
+  title: "Subscription Plans",
+  subtitle: "Choose a plan and pay directly with your mobile airtime.",
+  subscribed: "✅ Subscribed",
+  autoRenew: "Auto-renew",
+  subscribeButton: "Subscribe",
+  confirmTitle: "Confirm Payment",
+  confirmMessage: (price: number, name: string) =>
+    `You are about to pay ₦${price} for the ${name} plan.`,
+  cancel: "Cancel",
+  confirm: "Confirm",
+  successTitle: "Payment Successful",
+  successMessage: (name: string) => `Your ${name} plan has been activated.`,
+  done: "Done",
+  errorTitle: "Insufficient Balance",
+  errorMessage: (balance: number) =>
+    `Your balance (₦${balance}) is not enough for this plan.`,
+  ok: "OK",
+  renewalTitle: "Renewal Info",
+  renewalMessage: (name: string, date: string) =>
+    `Your ${name} plan will renew on ${date}.`,
+  close: "Close",
+  messagesLabel: "messages",
+  detectionsLabel: "detections",
+  plans: {
+    standardName: "Standard",
+    premiumName: "Premium",
+    enterpriseName: "Enterprise",
+    standardDesc: "A balanced plan for regular users and small businesses.",
+    premiumDesc: "For professionals needing extra fraud detection capacity.",
+    enterpriseDesc: "High-volume detection for organizations and large teams.",
+  },
+},
+
     smsStatusDisplay: 'Listening to SMS messages',
     listeningLabel: 'Statuses',
     somethingCount: (count: number) => `You have ${count} new messages`,
@@ -90,21 +162,26 @@ export const APP_DICTIONARY: Record<
       { key: 'amharic', label: 'Amharic' },
       { key: 'igbo', label: 'Igbo' },
     ],
-    tabs: { activity: 'Activity', settings: 'Settings' },
+    tabs: { activity: 'Activity', settings: 'Settings', subscriptions: 'Subscription' },
     ui: {
       yes: 'Yes',
       no: 'No',
       report: 'Report',
       unknown: 'Unknown',
+      close: 'Close',
+      permissionGrantedFeedback: 'Permission Granted!',
+      permissionDeniedFeedback: 'Permission Denied!'
     },
     statusLabels: {
       canListenSms: 'Can listen to SMS',
       canListenNotifications: 'Can listen to notifications',
       canPostNotifications: 'Can post notifications',
+      canDisplayOverApps: 'Can display over apps',
     },
     permissions: {
       title: 'Permissions required',
       smsTitle: 'Read SMS',
+      overLayTitle: 'Display Over Apps',  
       notificationsTitle: 'Notification Listener',
       postNotificationsTitle: 'Can Send Notifications',
       needPermissions: 'Permissions required',
@@ -136,12 +213,16 @@ export const APP_DICTIONARY: Record<
       invalidMessageBody: 'Invalid message body sent. Please do not edit the prompt message.',
       invalidMessageStructure: 'Invalid message body structure. Please do not edit the prompt message.',
       messageIdNotFound: 'Message ID not found in logs. Please do not edit the prompt message.',
+      permissionRequestFailed: "Permission request failed",
+
     },
     settings: {
       title: 'Settings',
       languageLabel: 'Language',
       persistNotice: 'Language and toggles are saved locally',
       spamFilterLabel: 'Spam filter (send bvn / send nin)',
+      languageSetMessage: (langLabel: string) => `Language set to ${langLabel}`,
+
     },
   },
   french: {

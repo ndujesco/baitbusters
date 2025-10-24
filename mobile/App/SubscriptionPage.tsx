@@ -9,39 +9,46 @@ import {
   Switch,
   ActivityIndicator,
 } from "react-native";
-import { ACCENT, BACKGROUND } from "./const";
+import { SUBSCRIPTION_ACCENT, BACKGROUND } from "./const";
+import { APP_DICTIONARY } from "./dictionary";
+import { useSettings } from "./contexts";
 
-const plans = [
 
-  {
-    id: "standard",
-    name: "Standard",
-    price: 1000,
-    messages: 7000,
-    detections: 150,
-    description: "A balanced plan for regular users and small businesses.",
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    price: 2500,
-    messages: 15000,
-    detections: 400,
-    description: "For professionals needing extra fraud detection capacity.",
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    price: 5000,
-    messages: 40000,
-    detections: 1000,
-    description: "High-volume detection for organizations and large teams.",
-  },
-];
 
 const USER_BALANCE = 1500;
 
 export default function SubscriptionPage() {
+  const { language } = useSettings()
+  const t = APP_DICTIONARY[language].subscriptions;
+
+  const plans = [
+    {
+      id: "standard",
+      name: t.plans.standardName,
+      price: 1000,
+      messages: 7000,
+      detections: 150,
+      description: t.plans.standardDesc,
+    },
+    {
+      id: t.plans.premiumName,
+      name: "Premium",
+      price: 2500,
+      messages: 15000,
+      detections: 400,
+      description: t.plans.premiumDesc,
+    },
+    {
+      id: "enterprise",
+      name: t.plans.enterpriseName,
+      price: 5000,
+      messages: 40000,
+      detections: 1000,
+      description: t.plans.enterpriseDesc,
+    },
+  ];
+
+
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<"confirm" | "success" | "error" | null>(null);
@@ -90,10 +97,8 @@ export default function SubscriptionPage() {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.title}>Subscription Plans</Text>
-      <Text style={styles.subtitle}>
-        Choose a plan and pay directly with your mobile airtime.
-      </Text>
+      <Text style={styles.title}>{t.title}</Text>
+      <Text style={styles.subtitle}>{t.subtitle}</Text>
 
       {plans.map((plan) => {
         const isSubscribed = subscribedPlan?.id === plan.id;
@@ -108,27 +113,25 @@ export default function SubscriptionPage() {
 
             <View style={styles.statsRow}>
               <Text style={styles.stat}>
-                💬 {plan.messages.toLocaleString()} messages
+                💬 {plan.messages.toLocaleString()} {t.messagesLabel}
               </Text>
               <Text style={styles.stat}>
-                🛡️ {plan.detections.toLocaleString()} detections
+                🛡️ {plan.detections.toLocaleString()} {t.detectionsLabel}
               </Text>
             </View>
 
             {isSubscribed ? (
-              <>
-                <View style={styles.subscribedRow}>
-                  <Text style={styles.subscribedText}>✅ Subscribed</Text>
-                  <View style={styles.switchRow}>
-                    <Text style={styles.autoRenewText}>Auto-renew</Text>
-                    <Switch
-                      value={autoRenew}
-                      onValueChange={setAutoRenew}
-                      thumbColor={autoRenew ? ACCENT : "#ccc"}
-                    />
-                  </View>
+              <View style={styles.subscribedRow}>
+                <Text style={styles.subscribedText}>{t.subscribed}</Text>
+                <View style={styles.switchRow}>
+                  <Text style={styles.autoRenewText}>{t.autoRenew}</Text>
+                  <Switch
+                    value={autoRenew}
+                    onValueChange={setAutoRenew}
+                    thumbColor={autoRenew ? SUBSCRIPTION_ACCENT : "#ccc"}
+                  />
                 </View>
-              </>
+              </View>
             ) : (
               <Pressable
                 onPress={() => handleSubscribe(plan)}
@@ -141,7 +144,7 @@ export default function SubscriptionPage() {
                 {loadingPlanId === plan.id ? (
                   <ActivityIndicator color={BACKGROUND} />
                 ) : (
-                  <Text style={styles.subscribeText}>Subscribe</Text>
+                  <Text style={styles.subscribeText}>{t.subscribeButton}</Text>
                 )}
               </Pressable>
             )}
@@ -160,11 +163,12 @@ export default function SubscriptionPage() {
           <View style={styles.modalCard}>
             {modalType === "confirm" && (
               <>
-                <Text style={styles.modalTitle}>Confirm Payment</Text>
+                <Text style={styles.modalTitle}>{t.confirmTitle}</Text>
                 <Text style={styles.modalText}>
-                  You are about to pay{" "}
-                  <Text style={styles.bold}>₦{selectedPlan?.price}</Text> for the{" "}
-                  <Text style={styles.bold}>{selectedPlan?.name}</Text> plan.
+                  {t.confirmMessage(
+                    selectedPlan?.price ?? 0,
+                    selectedPlan?.name ?? ""
+                  )}
                 </Text>
 
                 <View style={styles.modalButtons}>
@@ -172,11 +176,11 @@ export default function SubscriptionPage() {
                     onPress={() => setModalVisible(false)}
                     style={styles.cancelButton}
                   >
-                    <Text style={styles.cancelText}>Cancel</Text>
+                    <Text style={styles.cancelText}>{t.cancel}</Text>
                   </Pressable>
 
                   <Pressable onPress={simulatePayment} style={styles.confirmButton}>
-                    <Text style={styles.confirmText}>Confirm</Text>
+                    <Text style={styles.confirmText}>{t.confirm}</Text>
                   </Pressable>
                 </View>
               </>
@@ -185,16 +189,16 @@ export default function SubscriptionPage() {
             {modalType === "success" && (
               <>
                 <Text style={styles.successEmoji}>✅</Text>
-                <Text style={styles.modalTitle}>Payment Successful</Text>
+                <Text style={styles.modalTitle}>{t.successTitle}</Text>
                 <Text style={styles.modalText}>
-                  Your {selectedPlan?.name} plan has been activated.
+                  {t.successMessage(selectedPlan?.name ?? "")}
                 </Text>
 
                 <Pressable
                   onPress={() => setModalVisible(false)}
                   style={styles.doneButton}
                 >
-                  <Text style={styles.doneText}>Done</Text>
+                  <Text style={styles.doneText}>{t.done}</Text>
                 </Pressable>
               </>
             )}
@@ -202,16 +206,16 @@ export default function SubscriptionPage() {
             {modalType === "error" && (
               <>
                 <Text style={styles.errorEmoji}>❌</Text>
-                <Text style={styles.modalTitle}>Insufficient Balance</Text>
+                <Text style={styles.modalTitle}>{t.errorTitle}</Text>
                 <Text style={styles.modalText}>
-                  Your balance (₦{USER_BALANCE}) is not enough for this plan.
+                  {t.errorMessage(USER_BALANCE)}
                 </Text>
 
                 <Pressable
                   onPress={() => setModalVisible(false)}
                   style={styles.doneButton}
                 >
-                  <Text style={styles.doneText}>OK</Text>
+                  <Text style={styles.doneText}>{t.ok}</Text>
                 </Pressable>
               </>
             )}
@@ -228,25 +232,26 @@ export default function SubscriptionPage() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Renewal Info</Text>
+            <Text style={styles.modalTitle}>{t.renewalTitle}</Text>
             <Text style={styles.modalText}>
-              Your {subscribedPlan?.name} plan will renew on{" "}
-              <Text style={styles.bold}>
-                {subscribedPlan?.renewalDate?.toLocaleDateString()}
-              </Text>
-              .
+              {t.renewalMessage(
+                subscribedPlan?.name ?? "",
+                subscribedPlan?.renewalDate?.toLocaleDateString?.() ?? ""
+              )}
             </Text>
+
             <Pressable
               onPress={() => setRenewModal(false)}
               style={styles.doneButton}
             >
-              <Text style={styles.doneText}>Close</Text>
+              <Text style={styles.doneText}>{t.close}</Text>
             </Pressable>
           </View>
         </View>
       </Modal>
     </ScrollView>
   );
+
 }
 
 const styles = StyleSheet.create({
@@ -270,7 +275,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   planName: { fontWeight: "700", fontSize: 16, color: "#0f172a" },
-  planPrice: { fontWeight: "700", color: ACCENT },
+  planPrice: { fontWeight: "700", color: SUBSCRIPTION_ACCENT },
   planDesc: { color: "#64748b", marginTop: 6 },
   statsRow: {
     flexDirection: "row",
@@ -280,7 +285,7 @@ const styles = StyleSheet.create({
   stat: { color: "#0f172a", fontWeight: "600" },
   subscribeButton: {
     marginTop: 14,
-    backgroundColor:ACCENT,
+    backgroundColor: SUBSCRIPTION_ACCENT,
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: "center",
@@ -292,7 +297,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  subscribedText: { color: ACCENT, fontWeight: "700" },
+  subscribedText: { color: SUBSCRIPTION_ACCENT, fontWeight: "700" },
   switchRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   autoRenewText: { color: "#0f172a", fontWeight: "600", marginRight: 4 },
   modalOverlay: {
@@ -336,7 +341,7 @@ const styles = StyleSheet.create({
   cancelText: { color: "#64748b", fontWeight: "700" },
   confirmButton: {
     flex: 1,
-    backgroundColor: ACCENT,
+    backgroundColor: SUBSCRIPTION_ACCENT,
     paddingVertical: 10,
     borderRadius: 8,
     marginLeft: 6,
@@ -347,7 +352,7 @@ const styles = StyleSheet.create({
   errorEmoji: { fontSize: 42, marginBottom: 6 },
   doneButton: {
     marginTop: 16,
-    backgroundColor: ACCENT,
+    backgroundColor: SUBSCRIPTION_ACCENT,
     paddingVertical: 10,
     borderRadius: 8,
     paddingHorizontal: 20,

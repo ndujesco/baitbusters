@@ -38,10 +38,7 @@ export default function ActivityPage() {
     const notifSubRef = useRef<EmitterSubscription | null>(null);
     const recentBodiesRef = useRef<Set<string>>(new Set());
 
-    // REMOVED rowRefs
-    // const rowRefs = useRef<Record<string, Swipeable | null>>({});
 
-    // Load logs from storage
     useEffect(() => {
         (async () => {
             try {
@@ -114,7 +111,7 @@ export default function ActivityPage() {
                     NotificationPopupModule?.showOverlayPopup?.(
                         `${t.activity.spamDetected}`,
                         `${t.general.from}: ${from} — "${body}"`,
-                        "CLOSE"
+                        t.ui.close.toLocaleUpperCase()
                     );
                 } catch { }
             }
@@ -391,55 +388,55 @@ export default function ActivityPage() {
     return (
         <View style={{ flex: 1 }}>
             {/* --- Status Card (Unchanged) --- */}
-      {/* Replace the original centerCard block with this */}
-<View style={styles.centerCard}>
-  <View style={styles.statusHeader}>
-    <Text style={styles.statusLabel}>{t.listeningLabel}</Text>
-  </View>
+            {/* Replace the original centerCard block with this */}
+            <View style={styles.centerCard}>
+                <View style={styles.statusHeader}>
+                    <Text style={styles.statusLabel}>{t.listeningLabel}</Text>
+                </View>
 
-  <View style={styles.statusItems}>
-    {[
-      { label: t.statusLabels.canListenSms, state: listenSms },
-      { label: t.statusLabels.canListenNotifications, state: listenNotifications },
-      { label: t.statusLabels.canPostNotifications, state: canSendNotifications },
-      { label: 'Can display over apps', state: canDisplayOverApps },
-    ].map((item, index) => (
-      <View
-        key={index}
-        style={styles.statusRow}
-        accessible
-        accessibilityRole="text"
-        accessibilityLabel={item.label}
-        accessibilityState={{ checked: !!item.state }}
-      >
-        <View style={styles.rowLeft}>
-          <View
-            style={[
-              styles.indicator,
-              item.state ? styles.indicatorOn : styles.indicatorOff,
-            ]}
-          />
-          <Text style={styles.statusRowLabel} numberOfLines={1}>
-            {item.label}
-          </Text>
-        </View>
+                <View style={styles.statusItems}>
+                    {[
+                        { label: t.statusLabels.canListenSms, state: listenSms },
+                        { label: t.statusLabels.canListenNotifications, state: listenNotifications },
+                        { label: t.statusLabels.canPostNotifications, state: canSendNotifications },
+                        { label: t.statusLabels.canDisplayOverApps, state: canDisplayOverApps },
+                    ].map((item, index) => (
+                        <View
+                            key={index}
+                            style={styles.statusRow}
+                            accessible
+                            accessibilityRole="text"
+                            accessibilityLabel={item.label}
+                            accessibilityState={{ checked: !!item.state }}
+                        >
+                            <View style={styles.rowLeft}>
+                                <View
+                                    style={[
+                                        styles.indicator,
+                                        item.state ? styles.indicatorOn : styles.indicatorOff,
+                                    ]}
+                                />
+                                <Text style={styles.statusRowLabel} numberOfLines={1}>
+                                    {item.label}
+                                </Text>
+                            </View>
 
-        {/* right: check / empty circle */}
-        <View style={styles.statusRight}>
-          {item.state ? (
-            <Text style={styles.checkMark} accessible accessibilityLabel="Enabled">
-              ✓
-            </Text>
-          ) : (
-            <Text style={styles.crossMark} accessible accessibilityLabel="Disabled">
-              ✕
-            </Text>
-          )}
-        </View>
-      </View>
-    ))}
-  </View>
-</View>
+                            {/* right: check / empty circle */}
+                            <View style={styles.statusRight}>
+                                {item.state ? (
+                                    <Text style={styles.checkMark} accessible accessibilityLabel="Enabled">
+                                        ✓
+                                    </Text>
+                                ) : (
+                                    <Text style={styles.crossMark} accessible accessibilityLabel="Disabled">
+                                        ✕
+                                    </Text>
+                                )}
+                            </View>
+                        </View>
+                    ))}
+                </View>
+            </View>
 
             <View style={{ height: 50 }} />
 
@@ -460,7 +457,7 @@ export default function ActivityPage() {
                             <Text style={styles.clearButtonText}>{t.controls.clearLogs}</Text>
                         </TouchableOpacity>
                         <View style={styles.logCount}>
-                            <Text style={styles.logCountText}>{logs.length}</Text>
+                            <Text style={styles.logCountText}>{logs.filter((log) => log.spamStatus === 1).length}</Text>
                         </View>
                     </View>
                 </View>
@@ -649,7 +646,7 @@ const styles = StyleSheet.create({
 
 
     logCard: {
-        backgroundColor: BACKGROUND, // This is CRITICAL - ensures it hides the hidden item
+        backgroundColor: "#fff", // This is CRITICAL - ensures it hides the hidden item
         padding: 12,
         borderRadius: 12,
         marginBottom: 10,

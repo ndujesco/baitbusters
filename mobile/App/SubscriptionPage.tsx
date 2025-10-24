@@ -81,7 +81,7 @@ export default function SubscriptionPage() {
       }
 
       setModalVisible(true);
-    }, );
+    }, 3000);
   };
 
   return (

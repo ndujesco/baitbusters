@@ -1,15 +1,40 @@
 from fastapi import FastAPI
+import os
+from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Any, Dict, Optional
 import json
 from ai_model import probPhishing
+import requests
+
+
+load_dotenv()
+
+GOOGLE_TRANSLATE_API_KEY = os.getenv("GOOGLE_TRANSLATE_API_KEY", "")
 
 
 app = FastAPI()
 
+def translate_text(text):
+    url = "https://translation.googleapis.com/language/translate/v2"
+    params = {
+        "key": GOOGLE_TRANSLATE_API_KEY
+    }
+    body = {
+        "q": text,      # text to translate
+        "target": "en", # target language
+    }
+    print(GOOGLE_TRANSLATE_API_KEY)
+    response = requests.post(url, params=params, json=body)
+    data = response.json()
+
+    return data['data']['translations'][0]['translatedText']
+
+
 def check_spam_status(message) -> float:
     probability , prediction = probPhishing(message)
     prob = probability[0][1]
+    print(f"Probability of phishing: {prob}")
     if prob > 0.8:
         return 1
     else:
@@ -31,27 +56,31 @@ async def predict(data: Message):
     # Try to parse the inner JSON string
     try:
         parsed = json.loads(trimmed.replace("'", '"'))
-        print(parsed)
     except Exception:
         print("Not parsed")
         return {"reply": "-1"}
 
     # Must be a dict with id and body
     if not isinstance(parsed, dict):
+        print("Not a dict")
         return {"reply": "-1"}
 
     msg_id = parsed.get("id")
     body = parsed.get("body")
 
     if not isinstance(msg_id, (str, int)) or not isinstance(body, str):
+        print("Invalid id or body")
         return {"reply": "-1"}
 
     msg_id_str = str(msg_id)
 
     # Call your spam checker (DO NOT rewrite it here)
     try:
-        spam_status = check_spam_status(body)
+        translated_text = translate_text(body)
+        print("Translated Text:", translated_text)
+        spam_status = check_spam_status(translated_text)
     except Exception:
+        print("Error during spam check")
         return {"reply": "-1"}
 
     # Return a string reply that contains a JSON object with id and spam_status

@@ -2,17 +2,18 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Any, Dict, Optional
 import json
+from ai_model import probPhishing
+
 
 app = FastAPI()
 
 def check_spam_status(message) -> float:
-    if not message:
+    probability , prediction = probPhishing(message)
+    prob = probability[0][1]
+    if prob > 0.8:
+        return 1
+    else:
         return 0.0
-    if "!" in message:
-        return 1.0
-    if "?" in message:
-        return 0.5
-    return 0.0
 
 class Message(BaseModel):
     message: Any  # will be a JSON string like '{"id":"abc","body":"..."}'

@@ -30,9 +30,9 @@ This leaves millions vulnerable — particularly rural and elderly users — to 
 
 ---
 
-## ✨ Our Solution: **BaitBusters**
+## ✨ Our Solution: **Aegis**
 
-**BaitBusters** is a hybrid, AI-powered mobile security system that detects phishing messages across SMS, notifications, and messaging platforms — optimized for Africa’s mobile-first and low-connectivity environments.
+**Aegis** is a hybrid, AI-powered mobile security system that detects phishing messages across SMS, notifications, and messaging platforms — optimized for Africa’s mobile-first and low-connectivity environments.
 
 ### 🧠 How It Works
 1. The **mobile app** runs a **local AI model** that listens to incoming SMS and notifications in real time.  
@@ -142,7 +142,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ## 💡 TL;DR
 
-**BaitBusters** is an AI-powered mobile app that detects and blocks phishing attacks across SMS and notifications.
+**Aegis** is an AI-powered mobile app that detects and blocks phishing attacks across SMS and notifications.
 It runs locally on users’ devices, automatically verifies uncertain messages via an SMS gateway + backend AI model, and integrates an **offline DCB payment system** to enable easy access to premium protection — all while maintaining strict privacy and ethical standards.
 It’s multilingual, lightweight, and built for Africa’s mobile-first world.
 

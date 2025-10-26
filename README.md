@@ -11,7 +11,7 @@
 ## 🚀 Demos & Docs
 
 * **Mobile App (APK / Play Link):** [First version v1.0.0](https://github.com/ndujesco/baitbusters/releases/download/v1.0.0/app-release.apk) 
-* **SMS Gateway:**[First Version v1.0.0](https://github.com/ndujesco/baitbusters/releases/download/v1.0.0/gateway.apk)    
+* **SMS Gateway:** [First Version v1.0.0](https://github.com/ndujesco/baitbusters/releases/download/v1.0.0/gateway.apk)    
 * **Recorded Demo:**   
 
 ---

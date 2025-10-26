@@ -11,8 +11,7 @@
 ## 🚀 Demos & Docs
 
 * **Mobile App (APK / Play Link):**   
-* **SMS Gateway:**   
-* **Backend / AI Model API Docs:** [https://baitbusters.onrender.com/docs](https://baitbusters.onrender.com/docs)  
+* **SMS Gateway:**    
 * **Recorded Demo:**   
 
 ---

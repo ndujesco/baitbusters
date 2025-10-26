@@ -52,6 +52,7 @@ Users can interact with the app — and the AI can detect phishing — in the fo
 
 ```ts
 export type LangKey = 'english' | 'french' | 'hausa' | 'yoruba' | 'swahili' | 'amharic' | 'igbo';
+```
 
 ## ⚙️ Why This Design?
 
@@ -149,7 +150,7 @@ It’s multilingual, lightweight, and built for Africa’s mobile-first world.
 
 ## 🧩 Architecture Overview
 
-```
+```pgsql
 Incoming Message / Notification
            │
            ▼

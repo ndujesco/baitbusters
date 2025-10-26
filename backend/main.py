@@ -35,7 +35,7 @@ def check_spam_status(message) -> float:
     probability , prediction = probPhishing(message)
     prob = probability[0][1]
     print(f"Probability of phishing: {prob}")
-    if prob > 0.8:
+    if prob > 0.95:
         return 1
     else:
         return 0.0
@@ -55,6 +55,7 @@ async def predict(data: Message):
     trimmed = raw.strip()
     # Try to parse the inner JSON string
     try:
+        print("trimmed: ", trimmed)
         parsed = json.loads(trimmed.replace("'", '"'))
     except Exception:
         print("Not parsed")

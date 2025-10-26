@@ -15,7 +15,7 @@ import { useSettings } from "./contexts";
 
 
 
-const USER_BALANCE = 1500;
+const USER_BALANCE = 3;
 
 export default function SubscriptionPage() {
   const { language } = useSettings()
@@ -25,25 +25,25 @@ export default function SubscriptionPage() {
     {
       id: "standard",
       name: t.plans.standardName,
-      price: 1000,
-      messages: 7000,
-      detections: 150,
+      price: 3,
+      messages: 3000,
+      detections: 20,
       description: t.plans.standardDesc,
     },
     {
       id: t.plans.premiumName,
       name: "Premium",
-      price: 2500,
-      messages: 15000,
-      detections: 400,
+      price: 6,
+      messages: 7500,
+      detections: 30,
       description: t.plans.premiumDesc,
     },
     {
       id: "enterprise",
       name: t.plans.enterpriseName,
-      price: 5000,
-      messages: 40000,
-      detections: 1000,
+      price: 7,
+      messages: 10000,
+      detections: 50,
       description: t.plans.enterpriseDesc,
     },
   ];
@@ -106,7 +106,7 @@ export default function SubscriptionPage() {
           <View key={plan.id} style={styles.planCard}>
             <View style={styles.planHeader}>
               <Text style={styles.planName}>{plan.name}</Text>
-              <Text style={styles.planPrice}>₦{plan.price.toLocaleString()}</Text>
+              <Text style={styles.planPrice}>${plan.price.toLocaleString()}</Text>
             </View>
 
             <Text style={styles.planDesc}>{plan.description}</Text>

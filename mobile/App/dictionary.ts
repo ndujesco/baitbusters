@@ -165,7 +165,7 @@ export const APP_DICTIONARY:  Record<
       subscribeButton: "Subscribe",
       confirmTitle: "Confirm Payment",
       confirmMessage: (price: number, name: string) =>
-        `You are about to pay ₦${price} for the ${name} plan.`,
+        `You are about to pay $${price} for the ${name} plan.`,
       cancel: "Cancel",
       confirm: "Confirm",
       successTitle: "Payment Successful",
@@ -173,7 +173,7 @@ export const APP_DICTIONARY:  Record<
       done: "Done",
       errorTitle: "Insufficient Balance",
       errorMessage: (balance: number) =>
-        `Your balance (₦${balance}) is not enough for this plan.`,
+        `Your balance ($${balance}) is not enough for this plan.`,
       ok: "OK",
       renewalTitle: "Renewal Info",
       renewalMessage: (name: string, date: string) =>
@@ -270,7 +270,7 @@ export const APP_DICTIONARY:  Record<
       subscribeButton: "Souscrire",
       confirmTitle: "Confirmer le paiement",
       confirmMessage: (price: number, name: string) =>
-        `Vous allez payer ₦${price} pour le forfait ${name}.`,
+        `Vous allez payer $${price} pour le forfait ${name}.`,
       cancel: "Annuler",
       confirm: "Confirmer",
       successTitle: "Paiement réussi",
@@ -278,7 +278,7 @@ export const APP_DICTIONARY:  Record<
       done: "Terminé",
       errorTitle: "Solde insuffisant",
       errorMessage: (balance: number) =>
-        `Votre solde (₦${balance}) n'est pas assez élevé pour ce forfait.`,
+        `Votre solde ($${balance}) n'est pas assez élevé pour ce forfait.`,
       ok: "OK",
       renewalTitle: "Info de renouvellement",
       renewalMessage: (name: string, date: string) =>
@@ -375,7 +375,7 @@ export const APP_DICTIONARY:  Record<
       subscribeButton: "Yi biyan kuɗi",
       confirmTitle: "Tabbatar da Biyan Kuɗi",
       confirmMessage: (price: number, name: string) =>
-        `Za a biya ₦${price} don shirin ${name}.`,
+        `Za a biya $${price} don shirin ${name}.`,
       cancel: "Soke",
       confirm: "Tabbatar",
       successTitle: "Biyan Kuɗi Ya Yi Nasara",
@@ -383,7 +383,7 @@ export const APP_DICTIONARY:  Record<
       done: "An yi",
       errorTitle: "Ba isasshen Kuɗi",
       errorMessage: (balance: number) =>
-        `Ba kuɗinka (₦${balance}) bai isa don wannan shiri ba.`,
+        `Ba kuɗinka ($${balance}) bai isa don wannan shiri ba.`,
       ok: "OK",
       renewalTitle: "Bayani Na Sabuntawa",
       renewalMessage: (name: string, date: string) =>
@@ -480,7 +480,7 @@ export const APP_DICTIONARY:  Record<
       subscribeButton: 'Ṣe alabapin',
       confirmTitle: 'jẹ́wọ́ ìsanwó',
       confirmMessage: (price: number, name: string) =>
-        `O ń lọ láti san ₦${price} fún ètò ${name}.`,
+        `O ń lọ láti san $${price} fún ètò ${name}.`,
       cancel: 'Fagilé',
       confirm: 'Jẹ́wọ́',
       successTitle: 'Ìsanwó ṣeyè',
@@ -488,7 +488,7 @@ export const APP_DICTIONARY:  Record<
       done: 'Parí',
       errorTitle: 'Àìní Iwọ̀n Owo',
       errorMessage: (balance: number) =>
-        `Bálùù ọkọ rẹ (₦${balance}) kò tó fún ètò yìí.`,
+        `Bálùù ọkọ rẹ ($${balance}) kò tó fún ètò yìí.`,
       ok: 'OK',
       renewalTitle: 'Ìwé Àsìkò Ìgbépadàgbá',
       renewalMessage: (name: string, date: string) =>
@@ -585,7 +585,7 @@ export const APP_DICTIONARY:  Record<
       subscribeButton: 'Jiunge',
       confirmTitle: 'Thibitisha Malipo',
       confirmMessage: (price: number, name: string) =>
-        `Unakaribia kulipa ₦${price} kwa mpango wa ${name}.`,
+        `Unakaribia kulipa $${price} kwa mpango wa ${name}.`,
       cancel: 'Ghairi',
       confirm: 'Thibitisha',
       successTitle: 'Malipo Yamefanikiwa',
@@ -593,7 +593,7 @@ export const APP_DICTIONARY:  Record<
       done: 'Imekamilika',
       errorTitle: 'Salio Haijatosha',
       errorMessage: (balance: number) =>
-        `Salio lako (₦${balance}) halitoshi kwa mpango huu.`,
+        `Salio lako ($${balance}) halitoshi kwa mpango huu.`,
       ok: 'Sawa',
       renewalTitle: 'Taarifa ya Ukarabati',
       renewalMessage: (name: string, date: string) =>
@@ -690,7 +690,7 @@ export const APP_DICTIONARY:  Record<
       subscribeButton: "ይመዝገቡ",
       confirmTitle: "ክፍያን ያረጋግጡ",
       confirmMessage: (price: number, name: string) =>
-        `እርስዎ አሁን ለ ${name} እቅድ በ  ₦${price} መክፈል ነበር።`,
+        `እርስዎ አሁን ለ ${name} እቅድ በ  $${price} መክፈል ነበር።`,
       cancel: "ሰርዝ",
       confirm: "አረጋግጥ",
       successTitle: "ክፍያው ተሳክቷል",
@@ -698,7 +698,7 @@ export const APP_DICTIONARY:  Record<
       done: "ተከናውኗል",
       errorTitle: "በቂ ብር የለም",
       errorMessage: (balance: number) =>
-        `ለዚህ እቅድ የሚያስፈልገው በይፋ (₦${balance}) አልበቂም።`,
+        `ለዚህ እቅድ የሚያስፈልገው በይፋ ($${balance}) አልበቂም።`,
       ok: "እሺ",
       renewalTitle: "የመነሻ የተስተካከል መረጃ",
       renewalMessage: (name: string, date: string) =>
@@ -795,7 +795,7 @@ export const APP_DICTIONARY:  Record<
       subscribeButton: "Debanye aha",
       confirmTitle: "Nkwenye Ịkwụ Ụgwọ",
       confirmMessage: (price: number, name: string) =>
-        `Ị ga-akwụ ₦${price} maka atụmatụ ${name}.`,
+        `Ị ga-akwụ $${price} maka atụmatụ ${name}.`,
       cancel: "Kpọchie",
       confirm: "Kwenye",
       successTitle: "Ịkwụ Ụgwọ Gara Ọma",
@@ -803,7 +803,7 @@ export const APP_DICTIONARY:  Record<
       done: "Ọzọchara",
       errorTitle: "Ego adịghị ezu",
       errorMessage: (balance: number) =>
-        `Ego gị (₦${balance}) ezughi ezu maka atụmatụ a.`,
+        `Ego gị ($${balance}) ezughi ezu maka atụmatụ a.`,
       ok: "Ọ bụrịrị ya",
       renewalTitle: "Ozi Mgbakwunye",
       renewalMessage: (name: string, date: string) =>

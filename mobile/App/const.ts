@@ -1,6 +1,6 @@
 import { Dimensions, Platform, ToastAndroid } from "react-native";
 
-export const GATEWAY_NUMBER = '07041556156';
+export const GATEWAY_NUMBER = '07063569494';
 
 export type Log = {
   id: string;

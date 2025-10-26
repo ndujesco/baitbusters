@@ -1,5 +1,6 @@
 import { InferenceSession, Tensor } from 'onnxruntime-react-native';
 import RNFS from 'react-native-fs';
+import { showToast } from './const';
 
 let cachedSession: InferenceSession | null = null;
 
@@ -42,12 +43,18 @@ export async function checkPhishing(text: string): Promise<number> {
   const probTensor = results[outputNames[1]];
   const probability = probTensor.data[1] as number;
 
-  if (probability > 0.75) {
+  if (probability > 0.8) {
+    showToast(`Phishing(${probability}): ${text}`);
     return 1
   } else if (probability < 0.5) {
+    showToast(`Not phishing: ${text}`);
     return 0
   } else {
+    showToast(`Unsure: ${text}`);
     return 0.5
   }
 
 }
+
+
+console.log(checkPhishing("They have one category for 500k laidis dor pipeops"))

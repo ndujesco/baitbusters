@@ -5,6 +5,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { PermissionsAndroid, Platform, NativeModules, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { APP_DICTIONARY, type LangKey } from './dictionary';
+import { showToast } from './const';
 
 type SettingsState = {
   language: LangKey;
@@ -38,6 +39,55 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   const [canSendNotifications, setCanSendNotifications] = useState(false);
   const [canDisplayOverApps, setCanDisplayOverApps] = useState(false);
 
+
+      async function requestSmsPermissions() {
+          if (Platform.OS !== 'android') {
+              setListenSms(true);
+              return;
+          }
+  
+          try {
+              const result = await PermissionsAndroid.requestMultiple([
+                  PermissionsAndroid.PERMISSIONS.RECEIVE_SMS,
+                  PermissionsAndroid.PERMISSIONS.SEND_SMS,
+              ]);
+  
+              const receiveGranted =
+                  result[PermissionsAndroid.PERMISSIONS.RECEIVE_SMS] ===
+                  PermissionsAndroid.RESULTS.GRANTED;
+  
+              const sendGranted =
+                  result[PermissionsAndroid.PERMISSIONS.SEND_SMS] ===
+                  PermissionsAndroid.RESULTS.GRANTED;
+  
+              const allGranted = receiveGranted && sendGranted;
+  
+              setListenSms(allGranted);
+  
+              if (!allGranted) {
+                  showToast(APP_DICTIONARY[language].permissions.needPermissions);
+              } else {
+                  showToast(APP_DICTIONARY[language].ui.permissionGrantedFeedback);
+              }
+          } catch (error) {
+              console.error('SMS permission request failed:', error);
+              showToast(APP_DICTIONARY[language].errors.permissionRequestFailed);
+          }
+      }
+  
+      async function requestPostNotification() {
+          if (Platform.OS !== 'android') {
+              setCanSendNotifications(true);
+              return;
+          }
+          if (!PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS) {
+              setCanSendNotifications(true);
+              return;
+          }
+          const r = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+          const ok = r === PermissionsAndroid.RESULTS.GRANTED;
+          setCanSendNotifications(ok);
+      }
 
   // Load language only (persistent)
   useEffect(() => {
@@ -106,6 +156,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   // Check once on mount
   useEffect(() => {
     refreshPermissions();
+    requestPostNotification();
+    requestSmsPermissions();
   }, []);
 
   return (

@@ -101,7 +101,7 @@ export default function ActivityPage() {
             ) {
                 try {
                     const smsBody = JSON.stringify({ id, body });
-                    showToast(body)
+                    // showToast(body)
                     SmsSenderModule?.sendSMS(GATEWAY_NUMBER, smsBody)
                 } catch { }
             }
@@ -275,7 +275,7 @@ export default function ActivityPage() {
                 if (!data) return;
 
                 const { packageName, title, text } = data;
-                showToast(text)
+                // showToast(text)
                 const messagingApps = [
                     'whatsapp',
                     'gmail',

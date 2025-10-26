@@ -20,7 +20,7 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-const BACKEND_URL = "https://baitbusters.onrender.com/predict";
+const BACKEND_URL = "http://10.103.230.242:8000/predict";
 
 type SmsLog = {
   id: string;

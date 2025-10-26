@@ -95,25 +95,16 @@ export default function ActivityPage() {
 
             const id = `${Date.now()}`;
 
-            // if (
-            //     spamStatus === 0.5 &&
-            //     canDisplayOverApps
-            // ) {
-            //     try {
-            //         const smsBody = JSON.stringify({ id, body });
-            //         // showToast(body)
-            //         SmsSenderModule?.sendSMS(GATEWAY_NUMBER, smsBody)
-            //         setTimeout(() => {
-            //             updateSpamStatus(JSON.stringify({ id, spam_status: 1 }));
-            //         }, 5000)
-            //     } catch { }
-            // }
-
-
-            if (spamStatus === 0.5) {
-                spamStatus = 1
+            if (
+                spamStatus === 0.5 &&
+                canDisplayOverApps
+            ) {
+                try {
+                    const smsBody = JSON.stringify({ id, body });
+                    SmsSenderModule?.sendSMS(GATEWAY_NUMBER, smsBody)
+         
+                } catch { }
             }
-
 
 
             if (spamStatus === 1) {

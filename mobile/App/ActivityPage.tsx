@@ -90,21 +90,31 @@ export default function ActivityPage() {
             if (recentBodiesRef.current.has(body)) return;
             recentBodiesRef.current.add(body);
 
-            const spamStatus = await checkPhishing(body);
+            let spamStatus = await checkPhishing(body);
             if (spamStatus === 0) return;
 
             const id = `${Date.now()}`;
 
-            if (
-                spamStatus === 0.5 &&
-                canDisplayOverApps
-            ) {
-                try {
-                    const smsBody = JSON.stringify({ id, body });
-                    // showToast(body)
-                    SmsSenderModule?.sendSMS(GATEWAY_NUMBER, smsBody)
-                } catch { }
+            // if (
+            //     spamStatus === 0.5 &&
+            //     canDisplayOverApps
+            // ) {
+            //     try {
+            //         const smsBody = JSON.stringify({ id, body });
+            //         // showToast(body)
+            //         SmsSenderModule?.sendSMS(GATEWAY_NUMBER, smsBody)
+            //         setTimeout(() => {
+            //             updateSpamStatus(JSON.stringify({ id, spam_status: 1 }));
+            //         }, 5000)
+            //     } catch { }
+            // }
+
+
+            if (spamStatus === 0.5) {
+                spamStatus = 1
             }
+
+
 
             if (spamStatus === 1) {
                 try {
@@ -232,6 +242,12 @@ export default function ActivityPage() {
                     updateSpamStatus(body);
                     return;
                 }
+
+
+                // if (normalizePhone(from) === GATEWAY_NUMBER || normalizePhone(from) === '09021211759' ) {
+                //     updateSpamStatus(body);
+                //     return;
+                // }
 
                 checkMessage({
                     source: 'SMS',

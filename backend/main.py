@@ -24,7 +24,6 @@ def translate_text(text):
         "q": text,      # text to translate
         "target": "en", # target language
     }
-    print(GOOGLE_TRANSLATE_API_KEY)
     response = requests.post(url, params=params, json=body)
     data = response.json()
 
@@ -45,6 +44,7 @@ class Message(BaseModel):
 
 @app.post("/predict")
 async def predict(data: Message):
+
     raw = data.message
 
     # Expect a string which itself is JSON ({"id": "...", "body": "..."})
@@ -69,11 +69,14 @@ async def predict(data: Message):
     msg_id = parsed.get("id")
     body = parsed.get("body")
 
+    reply_payload = json.dumps({"id": msg_id, "spam_status": 1.0})
+    return {"reply": reply_payload}
+    
+
     if not isinstance(msg_id, (str, int)) or not isinstance(body, str):
         print("Invalid id or body")
         return {"reply": "-1"}
 
-    msg_id_str = str(msg_id)
 
     # Call your spam checker (DO NOT rewrite it here)
     try:

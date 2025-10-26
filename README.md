@@ -1,4 +1,4 @@
-# TEAM BAITBUSTERS
+# 🛡️ TEAM BAITBUSTERS
 
 ## 👥 Team Members
 - Fadeyi David  
@@ -19,12 +19,12 @@
 ## 🎯 The Problem
 
 Mobile money has revolutionized financial inclusion across Africa, with over 600 million users conducting $1.4 trillion in annual transactions.  
-However, sophisticated phishing attacks exploit local languages, cultural cues, and trust dynamics to deceive users.  
+However, sophisticated phishing attacks exploit local languages, cultural cues, and trust dynamics to deceive users.
 
 Traditional cybersecurity solutions fail because they:
 - Lack understanding of African languages and cultural nuances  
 - Require strong devices or consistent internet connectivity  
-- Often depend on centralized storage, raising privacy concerns  
+- Depend on centralized storage, raising privacy concerns  
 
 This leaves millions vulnerable — particularly rural and elderly users — to phishing scams that steal critical information and wipe out months of income.
 
@@ -32,30 +32,44 @@ This leaves millions vulnerable — particularly rural and elderly users — to 
 
 ## ✨ Our Solution: **BaitBusters**
 
-**BaitBusters** is a hybrid, AI-powered mobile security system designed to detect phishing messages across SMS, notifications, and messaging platforms — optimized for Africa’s mobile-first and low-connectivity environments.
+**BaitBusters** is a hybrid, AI-powered mobile security system that detects phishing messages across SMS, notifications, and messaging platforms — optimized for Africa’s mobile-first and low-connectivity environments.
 
 ### 🧠 How It Works
 1. The **mobile app** runs a **local AI model** that listens to incoming SMS and notifications in real time.  
 2. For every new message, the local model decides one of three outcomes:
    - **Sure-Phish:** confidently malicious → immediate user alert  
    - **Sure-Safe:** confidently safe → silently ignored  
-   - **Unsure:** uncertain → requests user consent for verification
-3. When **unsure**, the app prompts the user to manually send the message to our **SMS Gateway** (consent-first approach; *no automatic sending*).  
-4. The **SMS Gateway** receives the message, forwards it to our **FastAPI AI backend**, and then receives a verdict.
-5. The gateway sends the verdict back to the user’s app via SMS.  
-6. The app parses that response, updates the UI, and alerts the user accordingly.
+   - **Unsure:** uncertain → automatically sent to the **SMS Gateway** for verification  
+3. The **SMS Gateway** receives the message, forwards it to our **FastAPI AI backend**, and then receives a verdict.  
+4. The gateway sends the verdict back to the user’s app via SMS.  
+5. The app parses that response, updates the UI, and alerts the user accordingly.
 
-### ⚙️ Why This Design?
-- **Ethical by Design:** user consent before message forwarding; no silent data transmission.  
-- **Privacy-Preserving:** messages are not stored; no database or persistent storage.  
-- **Lightweight:** runs effectively on basic Android devices with 1–2GB RAM.  
+---
+
+## 🌍 Multilingual Intelligence
+
+Users can interact with the app — and the AI can detect phishing — in the following languages:
+
+```ts
+export type LangKey = 'english' | 'french' | 'hausa' | 'yoruba' | 'swahili' | 'amharic' | 'igbo';
+
+## ⚙️ Why This Design?
+
+- **Automatic Verification:** suspicious messages are forwarded automatically — no user action needed.  
+- **Offline Payment Support:** DCB ensures users can subscribe without internet.  
+- **Privacy-Preserving:** messages are analyzed in-memory and never stored.  
+- **Lightweight:** runs smoothly on low-end Android devices (1–2 GB RAM).  
 - **Offline Ready:** local detection works even without internet access.  
+- **Culturally Aware:** understands and flags phishing attempts in African languages.  
 
-### 🔒 Key Features
-- Instant alerts for confirmed phishing attempts  
+## 🔒 Key Features
+
+- Real-time phishing detection and instant alerts  
 - Explainable verdicts from backend model (educational for users)  
-- Notification-level scanning to catch spoofing and impersonation attempts  
-- Culturally aware model trained to understand local linguistic cues  
+- Multilingual support for African users  
+- Notification-level scanning for spoofing and impersonation  
+- **Offline DCB-based payment system** for seamless access  
+- Ethical AI that prioritizes privacy and transparency  
 
 ---
 
@@ -66,8 +80,8 @@ This leaves millions vulnerable — particularly rural and elderly users — to 
 | **Mobile App** | React Native + Native Modules (Java/Kotlin) |
 | **SMS Gateway** | React Native / Native Android service |
 | **Backend (AI Model)** | FastAPI (Python) |
-| **Database / Storage** | None (ephemeral processing only) |
-| **Deployment** | Render (for AI backend) |
+| **Database / Storage** | Offline Direct Carrier Billing (DCB) |
+| **Payment System** | Render (for AI backend) |
 
 ---
 
@@ -91,6 +105,13 @@ npx react-native start --reset-cache
 npx react-native run-android
 ````
 
+To build a release APK
+```bash
+cd android
+./gradlew assembleRelease
+# Output: android/app/build/outputs/apk/release/app-release.apk
+```
+
 ### 🧠 Backend / AI Model
 
 ```bash
@@ -111,9 +132,9 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ## ⚖️ Ethics & Privacy
 
-* **No automatic forwarding:** user must explicitly approve before any data is sent.
-* **No data storage:** messages are analyzed in-memory and immediately discarded.
-* **Transparency:** backend verdicts are shared with explanations to educate users.
+* **Automatic but Anonymous:** messages are forwarded automatically for uncertain detections, but never stored or linked to personal data.
+* **No Persistent Storage:** all processing is in-memory and ephemeral.all processing is in-memory and ephemeral.
+* **Offline Accessibility:** DCB-based payments and local inference empower users without data or smartphones.
 * **User-first:** full control, privacy, and consent at every step.
 
 ---
@@ -121,7 +142,8 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ## 💡 TL;DR
 
 **BaitBusters** is an AI-powered mobile app that detects and blocks phishing attacks across SMS and notifications.
-It runs locally on users’ devices, alerts them instantly when danger is detected, and uses an opt-in SMS gateway + backend AI model to verify uncertain messages — all while maintaining strict privacy and ethical standards.
+It runs locally on users’ devices, automatically verifies uncertain messages via an SMS gateway + backend AI model, and integrates an **offline DCB payment system** to enable easy access to premium protection — all while maintaining strict privacy and ethical standards.
+It’s multilingual, lightweight, and built for Africa’s mobile-first world.
 
 ---
 
@@ -135,11 +157,8 @@ Incoming Message / Notification
  │ Local Model (App)  │
  │  - Sure-Phish → Alert User
  │  - Sure-Safe → Ignore
- │  - Unsure → Ask Consent
+ │  - Unsure → Auto-forward to Gateway
  └────────────────────┘
-           │
-           ▼
-  (User sends to Gateway)
            │
            ▼
  ┌────────────────────┐
@@ -158,8 +177,15 @@ Incoming Message / Notification
            │
            ▼
      App Receives Verdict → Display Result
+           │
+           ▼
+ ┌────────────────────┐
+ │ Offline DCB System │
+ │  - Handles Payment │
+ │  - No Internet Req │
+ └────────────────────┘
+
 ```
 
----
 
 

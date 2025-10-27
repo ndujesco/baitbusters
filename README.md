@@ -14,7 +14,7 @@
 * **SMS Gateway:** [First Version v1.0.0](https://github.com/ndujesco/baitbusters/releases/download/v1.0.0/gateway.apk)
 * **Organized files used to train model:** [Zipped file](https://drive.google.com/file/d/1neQp5v14qYDCnkP1hXnV1P8-ZgVbHR1y/view?usp=sharing)
 * **Explanation of the models:** [Word document](https://docs.google.com/document/d/1nS9pcu8t3t79whs6NxF-cgkbnXrwfb2c/edit?usp=sharing&ouid=106772302019175603373&rtpof=true&sd=true)
-* **Recorded Demo:**   
+* **Recorded Demo:** [YouTube link](https://youtu.be/q1Vu--y743k)
 
 ---
 

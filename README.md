@@ -187,6 +187,15 @@ Incoming Message / Notification
  └────────────────────┘
 
 ```
+---
+## 🧩 App Screenshots
+
+![Screenshot_20251026-200735](https://github.com/user-attachments/assets/34ca5511-f692-4481-b934-a8e1d769d8b0)
+![Screenshot_20251026-193433](https://github.com/user-attachments/assets/1037f5e7-9449-46db-9617-10a6f3bb7887)
+![Screenshot_20251026-195127](https://github.com/user-attachments/assets/80dac92e-5a08-4def-abc1-5d0813ec5b13)
+![Screenshot_20251026-194531](https://github.com/user-attachments/assets/3acf273d-c1ff-4822-8a6f-1be6be04e7a9)
+![Screenshot_20251026-194542](https://github.com/user-attachments/assets/10d37171-0fcb-4cd7-8984-dced67b4bbe9)
+![Screenshot_20251026-194142](https://github.com/user-attachments/assets/bfb3165b-e136-4907-87f2-8b1351103349)
 
 
 

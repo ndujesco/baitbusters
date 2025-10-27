@@ -190,7 +190,7 @@ Incoming Message / Notification
 
 ```
 ---
-## 🧩 App Screenshots
+## 📸 App Screenshots
 
 ![Screenshot_20251026-200735](https://github.com/user-attachments/assets/34ca5511-f692-4481-b934-a8e1d769d8b0)
 ---
